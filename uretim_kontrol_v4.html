@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Üretim Kontrol">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f3f6e">
+<title>Üretim Kontrol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+:root{
+  --bg:#0a1628;--surface:#0f2040;--surface2:#162a50;
+  --accent:#1a7fd4;--accent2:#0f5fa0;
+  --green:#1db87a;--red:#e55;
+  --text:#e8f0f8;--text2:#8aaac8;--text3:#4a6a8a;
+  --border:#1e3558;--border2:#2a4870;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+  --r:12px;--rs:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);font-family:var(--sans);color:var(--text);overscroll-behavior:none;}
+body{display:flex;flex-direction:column;max-width:480px;margin:0 auto;min-height:100dvh;}
+
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);
+  padding:max(env(safe-area-inset-top),14px) 16px 14px;flex-shrink:0;}
+.hdr-inner{display:flex;align-items:center;gap:12px;}
+.hdr-icon{width:38px;height:38px;border-radius:10px;background:var(--accent2);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.hdr-icon svg{width:20px;height:20px;}
+.hdr-t{font-size:17px;font-weight:600;letter-spacing:-.01em;}
+.hdr-s{font-size:11px;color:var(--text3);margin-top:1px;font-family:var(--mono);}
+
+.opform{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;flex-shrink:0;}
+.opform-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;font-family:var(--mono);}
+.opform-row{display:flex;gap:8px;margin-bottom:8px;}
+.opform-row:last-child{margin-bottom:0;}
+.inp{flex:1;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--rs);
+  color:var(--text);font-size:15px;font-family:var(--sans);padding:10px 13px;outline:none;transition:.15s;}
+.inp::placeholder{color:var(--text3);font-size:14px;}
+.inp:focus{border-color:var(--accent);}
+.inp-mono{font-family:var(--mono);font-size:14px;}
+.op-set{background:var(--green);color:#fff;border:none;border-radius:var(--rs);
+  padding:0 16px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;transition:.12s;}
+.op-set:active{opacity:.82;}
+.op-badge{display:none;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rs);
+  padding:8px 14px;font-size:13px;color:var(--text2);align-items:center;justify-content:space-between;}
+.op-badge.show{display:flex;}
+.op-edit{background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;font-family:var(--sans);}
+
+.search-wrap{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;}
+.search-row{display:flex;gap:8px;}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:var(--rs);
+  padding:0 20px;font-size:15px;font-weight:600;cursor:pointer;transition:.12s;white-space:nowrap;}
+.btn:active{opacity:.82;}
+
+.quick-wrap{padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.ql{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;font-family:var(--mono);}
+.chips{display:flex;gap:7px;flex-wrap:wrap;}
+.chip{background:var(--bg);border:1px solid var(--border2);border-radius:20px;
+  padding:5px 13px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;font-family:var(--mono);transition:.12s;}
+.chip:active{background:var(--surface2);color:var(--text);border-color:var(--accent);}
+
+.results{flex:1;overflow-y:auto;padding:14px 14px 40px;-webkit-overflow-scrolling:touch;}
+
+.empty{display:flex;flex-direction:column;align-items:center;padding:50px 20px;color:var(--text3);text-align:center;gap:12px;}
+.empty-icon{width:56px;height:56px;border-radius:16px;background:var(--surface);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;}
+.empty-icon svg{width:24px;height:24px;}
+.empty-t{font-size:15px;color:var(--text2);font-weight:500;}
+.empty-s{font-size:13px;line-height:1.5;}
+
+.rcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px;animation:fu .2s ease;}
+@keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.rcard-hd{background:var(--accent2);padding:13px 16px;}
+.rcard-meta{display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap;}
+.badge{font-family:var(--mono);font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;
+  background:rgba(255,255,255,.15);color:rgba(255,255,255,.9);}
+.badge-no{background:rgba(0,0,0,.25);}
+.rcard-title{font-size:14px;font-weight:600;color:#fff;line-height:1.4;}
+.rcard-body{padding:0;}
+.clist{display:flex;flex-direction:column;}
+.crow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+  padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface2);}
+.crow:nth-child(odd){background:var(--surface);}
+.crow:last-child{border-bottom:none;}
+.crow-lbl{font-size:12px;color:var(--text3);flex-shrink:0;padding-top:1px;width:130px;}
+.crow-val{font-size:13px;font-family:var(--mono);color:var(--text);word-break:break-all;line-height:1.4;text-align:right;}
+.crow-yok{color:var(--text3);font-style:italic;font-family:var(--sans);font-size:12px;}
+
+.kaydet-wrap{padding:12px 16px;border-top:1px solid var(--border);background:var(--surface);}
+.btn-kaydet{width:100%;padding:13px;background:var(--green);color:#fff;border:none;
+  border-radius:var(--rs);font-size:15px;font-weight:600;cursor:pointer;transition:.12s;}
+.btn-kaydet:active{opacity:.82;}
+.btn-kaydet:disabled{background:var(--surface2);color:var(--text3);cursor:not-allowed;}
+
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--green);color:#fff;padding:11px 22px;border-radius:30px;
+  font-size:14px;font-weight:500;opacity:0;transition:.3s;pointer-events:none;z-index:999;white-space:nowrap;}
+.toast.err{background:var(--red);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.notfound{text-align:center;padding:40px 20px;color:var(--text3);}
+.notfound strong{color:var(--text2);font-family:var(--mono);}
+.notfound-hint{font-size:12px;margin-top:6px;}
+
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#7dc8f5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+        <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+      </svg>
+    </div>
+    <div><div class="hdr-t">Üretim Kontrol</div><div class="hdr-s">Kalem sorgulama sistemi</div></div>
+  </div>
+</div>
+
+<div class="opform" id="opform">
+  <div class="opform-title" id="opTitle">Operatör bilgileri</div>
+  <div id="opInputs">
+    <div class="opform-row">
+      <input class="inp" type="text" id="adSoyad" placeholder="Ad Soyad" autocomplete="name"/>
+    </div>
+    <div class="opform-row">
+      <input class="inp inp-mono" type="text" id="uretimNo" placeholder="Üretim No" autocomplete="off"/>
+      <button class="op-set" onclick="operatorKaydet()">Kaydet</button>
+    </div>
+  </div>
+  <div class="op-badge" id="opBadge">
+    <span id="opBadgeText"></span>
+    <button class="op-edit" onclick="operatorDegistir()">Değiştir</button>
+  </div>
+</div>
+
+<div class="search-wrap">
+  <div class="search-row">
+    <input class="inp inp-mono" type="text" id="inp" placeholder="Kalem kodu veya raf no..." inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false"/>
+    <button class="btn" onclick="doSearch()">Ara</button>
+  </div>
+</div>
+
+<div class="quick-wrap">
+  <div class="ql">Hızlı erişim</div>
+  <div class="chips" id="chips"></div>
+</div>
+
+<div class="results" id="results">
+  <div class="empty">
+    <div class="empty-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    </div>
+    <div class="empty-t">Operatör bilgilerini girin</div>
+    <div class="empty-s">Ad soyad ve üretim numarasını girdikten<br>sonra kalem kodu arayabilirsiniz</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+
+var SHEET_URL = 'https://script.google.com/macros/s/AKfycbziAvQR5qURlSpMlwJJzWvK9YM4thvHD0LV9wfQZ1Hxx-IrBj_Fq71ROaIgWHQbaZxB/exec';
+
+const DATA=[{"no": 1, "kod": "5251721313990000", "raf": "R248", "ac": "HORTUM, 1\" 1SC 90°+90° 28L TB:1310 ORY:300°", "adet": "9", "kesim": "116", "capi": "1", "tip": "1SC", "b1k": "5251741308510000", "b1a": "Başlık, 1\", 28l, M36x2, Din 3865-Dkol 90 (1201391)", "b2k": "5251741308510000", "b2a": "Başlık, 1\", 28l, M36x2, Din 3865-Dkol 90 (1201391)", "sk": "5251741308100000", "sa": "FERRULE, 1\", H1200AD1, (1227986)", "ory": "300°", "sp": "YOK", "spk": ""}, {"no": 2, "kod": "5251721314960000", "raf": "", "ac": "1\" 1SC DUZ+DUZ 28L TB:600", "adet": "9", "kesim": "53.28", "capi": "1", "tip": "1SC", "b1k": "5251741308340000", "b1a": "Başlık, 1\", 28l, M36x2, Din 3865-Dkol (1201385)", "b2k": "5251741308340000", "b2a": "Başlık, 1\", 28l, M36x2, Din 3865-Dkol (1201385)", "sk": "5251741308100000", "sa": "FERRULE, 1\", H1200AD1, (1227986)", "ory": "", "sp": "", "spk": ""}, {"no": 3, "kod": "5255421312240000", "raf": "R253", "ac": "HORTUM, 1\" 1SC TB:300", "adet": "9", "kesim": "32.5", "capi": "1", "tip": "1SC", "b1k": "BAŞLIK YOK", "b1a": "", "b2k": "BAŞLIK YOK", "b2a": "", "sk": "BAŞLIK YOK", "sa": "", "ory": "", "sp": "BAŞLIK YOK", "spk": "BAŞLIK YOK"}, {"no": 4, "kod": "5251721314000000", "raf": "R104", "ac": "HORTUM, 3/4\" 2SC DUZ+90° 20S TB:1500", "adet": "9", "kesim": "141.24", "capi": "0.75", "tip": "2SC", "b1k": "5251741308390000", "b1a": "Başlık, 3/4\", 20s, M30x2, Din 3865-Dkos (1201732)", "b2k": "5251741308490000", "b2a": "Başlık, 3/4\", 20s, M30x2, Din 3865-Dkos 90 (1200766)", "sk": "5251741309460000", "sa": "", "ory": "", "sp": "YOK", "spk": ""}, {"no": 5, "kod": "5251721314440000", "raf": "R106", "ac": "HORTUM, 3/4\" 2SC (DUZ 25S)+(90° 20S) TB:1240", "adet": "9", "kesim": "114.92", "capi": "0.75", "tip": "2SC", "b1k": "5251741308400000", "b1a": "Başlık, 3/4\", 25s, M36x2, Din 3865-Dkos (1216696)", "b2k": "5251741308490000", "b2a": "Başlık, 3/4\", 20s, M30x2, Din 3865-Dkos 90 (1200766)", "sk": "5251741308110000", "sa": "Soket, 3/4\", H1200ad1, (1227985)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 6, "kod": "5251721314070000", "raf": "R110", "ac": "HORTUM, 3/4\" 2SC DUZ+90° 20S TB:1220 (P.SPIRAL 350 MM)", "adet": "9", "kesim": "113.24", "capi": "0.75", "tip": "2SC", "b1k": "5251741308390000", "b1a": "Başlık, 3/4\", 20s, M30x2, Din 3865-Dkos (1201732)", "b2k": "5251741308490000", "b2a": "Başlık, 3/4\", 20s, M30x2, Din 3865-Dkos 90 (1200766)", "sk": "5251741309460000", "sa": "", "ory": "", "sp": "Düz Uca 35cm Spiral", "spk": "40"}, {"no": 7, "kod": "5251721314140000", "raf": "R113", "ac": "HORTUM, 3/4\" 2SC DUZ-DUZ 25S TB:750", "adet": "9", "kesim": "67.6", "capi": "0.75", "tip": "2SC", "b1k": "5251741308400000", "b1a": "Başlık, 3/4\", 25s, M36x2, Din 3865-Dkos (1216696)", "b2k": "5251741308400000", "b2a": "Başlık, 3/4\", 25s, M36x2, Din 3865-Dkos (1216696)", "sk": "5251741309460000", "sa": "", "ory": "", "sp": "YOK", "spk": ""}, {"no": 8, "kod": "5251721314660000", "raf": "", "ac": "HORTUM, 3/4\" 1SC 90° 20S TB:2950 MM (TEK BASLIK)", "adet": "9", "kesim": "289.94", "capi": "0.75", "tip": "1SC", "b1k": "5251741308490000", "b1a": "Başlık, 3/4\", 20s, M30x2, Din 3865-Dkos 90 (1200766)", "b2k": "YOK", "b2a": "", "sk": "5251741308110000", "sa": "Soket, 3/4\", H1200ad1, (1227985)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 9, "kod": "5251721314320000", "raf": "R93", "ac": "HORTUM, 3/4\" 1SC DUZ 20S TB:2100 (TEK BASLIK)", "adet": "9", "kesim": "206.3", "capi": "0.75", "tip": "1SC", "b1k": "5251741308390000", "b1a": "Başlık, 3/4\", 20s, M30x2, Din 3865-Dkos (1201732)", "b2k": "YOK", "b2a": "", "sk": "5251741308110000", "sa": "Soket, 3/4\", H1200ad1, (1227985)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 10, "kod": "5251721314120000", "raf": "R129", "ac": "HORTUM, 5/8\" 2SC 90°+90° 20S TB:1520 MM ORY:0 (P. SPIRAL 650MM)", "adet": "9", "kesim": "142.42", "capi": "0.625", "tip": "2SC", "b1k": "5251741308480000", "b1a": "Başlık, 5/8\", 20s, M30x2, Din 3865-Dkos 90 (1200741)", "b2k": "5251741308480000", "b2a": "Başlık, 5/8\", 20s, M30x2, Din 3865-Dkos 90 (1200741)", "sk": "5251741308120000", "sa": "Soket, 5/8\", H1200ad1, (1227983)", "ory": "0°", "sp": "65CM SPİRAL", "spk": "75"}, {"no": 11, "kod": "5255421311070000", "raf": "R131", "ac": "HORTUM, 5/8\" 2SC 90+90 20S TB:1330 ORY:0 (REF:172128219)", "adet": "9", "kesim": "123.4", "capi": "0.625", "tip": "2SC", "b1k": "5251741308480000", "b1a": "Başlık, 5/8\", 20s, M30x2, Din 3865-Dkos 90 (1200741)", "b2k": "5251741308480000", "b2a": "Başlık, 5/8\", 20s, M30x2, Din 3865-Dkos 90 (1200741)", "sk": "5251741308120000", "sa": "Soket, 5/8\", H1200ad1, (1227983)", "ory": "0°", "sp": "YOK", "spk": ""}, {"no": 12, "kod": "5251721314040000", "raf": "R246", "ac": "HORTUM, 5/8\" 2SC 90°+45° 20S TB:1290 ORY:90°", "adet": "9", "kesim": "117.58", "capi": "0.625", "tip": "2SC", "b1k": "5251741308480000", "b1a": "Başlık, 5/8\", 20s, M30x2, Din 3865-Dkos 90 (1200741)", "b2k": "5251741308580000", "b2a": "Başlık, 5/8\", 20s, M30x2, Din 3865-Dkos  45 (1201300)", "sk": "5251741308120000", "sa": "Soket, 5/8\", H1200ad1, (1227983)", "ory": "90°", "sp": "YOK", "spk": ""}, {"no": 13, "kod": "5255421311740000", "raf": "R205", "ac": "HORTUM, 5/8\" 2SC 90°+45° 20S TB:940 MM ORY:50(REF:172128208)", "adet": "9", "kesim": "82.58", "capi": "0.625", "tip": "2SC", "b1k": "5251741308480000", "b1a": "Başlık, 5/8\", 20s, M30x2, Din 3865-Dkos 90 (1200741)", "b2k": "5251741308580000", "b2a": "Başlık, 5/8\", 20s, M30x2, Din 3865-Dkos  45 (1201300)", "sk": "5251741308120000", "sa": "Soket, 5/8\", H1200ad1, (1227983)", "ory": "50°", "sp": "YOK", "spk": ""}, {"no": 14, "kod": "5251721314650000", "raf": "", "ac": "HORTUM, 5/8\" 1SC 90 16S TB:2000 MM (TEK BASLIK)", "adet": "9", "kesim": "193.7", "capi": "0.625", "tip": "1SC", "b1k": "5251741308470000", "b1a": "Başlık, 5/8\", 16s, M24x1,5, Din 3865-Dkos 90 (1240088)", "b2k": "", "b2a": "", "sk": "5251741308120000", "sa": "Soket, 5/8\", H1200ad1, (1227983)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 15, "kod": "5251721314330000", "raf": "R122", "ac": "HORTUM, 5/8\" 1SC 90° 16S TB:1960 (TEK BASLIK)", "adet": "9", "kesim": "190.8", "capi": "0.625", "tip": "1SC", "b1k": "5251741308470000", "b1a": "Başlık, 5/8\", 16s, M24x1,5, Din 3865-Dkos 90 (1240088)", "b2k": "", "b2a": "", "sk": "5251741308120000", "sa": "Soket, 5/8\", H1200ad1, (1227983)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 16, "kod": "5251721314830000", "raf": "", "ac": "HORTUM, 5/8\" 1SC DUZ+90 20S TB:1200", "adet": "9", "kesim": "111.56", "capi": "0.625", "tip": "1SC", "b1k": "5251741308380000", "b1a": "Başlık, 5/8\", 20s, M30x2, Din 3865-Dkos (1200737)", "b2k": "5251741308480000", "b2a": "Başlık, 5/8\", 20s, M30x2, Din 3865-Dkos 90 (1200741)", "sk": "5251741308120000", "sa": "Soket, 5/8\", H1200ad1, (1227983)", "ory": "", "sp": "YOK", "spk": "YOK"}, {"no": 17, "kod": "5251721314110000", "raf": "R151", "ac": "HORTUM, 1/2\" 2SC DUZ+90° 16S TB:1440 MM", "adet": "9", "kesim": "136.9", "capi": "0.5", "tip": "2SC", "b1k": "5251741308370000", "b1a": "Başlık, 1/2\", 16s, M24x1,5, Düz, Din 3865-Dkos (1200708)", "b2k": "5251741308460000", "b2a": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "sk": "5251741308160000", "sa": "Soket, 1/2\", H1200ad1, (1227981)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 18, "kod": "5251721314130000", "raf": "R152", "ac": "HORTUM, 1/2\" 2SC DUZ+90° 16S TB:1410 MM (P. SPIRAL 600MM)", "adet": "9", "kesim": "133.85", "capi": "0.5", "tip": "2SC", "b1k": "5251741308370000", "b1a": "Başlık, 1/2\", 16s, M24x1,5, Düz, Din 3865-Dkos (1200708)", "b2k": "5251741308460000", "b2a": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "sk": "5251741308160000", "sa": "Soket, 1/2\", H1200ad1, (1227981)", "ory": "", "sp": "DÜZ UCA 60", "spk": "72"}, {"no": 19, "kod": "5251721314100000", "raf": "R154", "ac": "HORTUM, 1/2\" 2SC 90°+90° 16S TB:1340 ORY:0", "adet": "9", "kesim": "126.1", "capi": "0.5", "tip": "2SC", "b1k": "5251741308460000", "b1a": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "b2k": "5251741308460000", "b2a": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "sk": "5251741308160000", "sa": "Soket, 1/2\", H1200ad1, (1227981)", "ory": "0°", "sp": "YOK", "spk": ""}, {"no": 20, "kod": "5251721314050000", "raf": "R166", "ac": "HORTUM, 1/2\" 2SC 90°+45° 16S TB:1290 ORY:90°", "adet": "9", "kesim": "119.5", "capi": "0.5", "tip": "2SC", "b1k": "5251741308460000", "b1a": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "b2k": "5251741308560000", "b2a": "Başlık, 1/2\", 16s, M24x1.5, Din 3865-Dkos  45 (1200712)", "sk": "5251741308160000", "sa": "Soket, 1/2\", H1200ad1, (1227981)", "ory": "90°", "sp": "YOK", "spk": ""}, {"no": 21, "kod": "5255421311020000", "raf": "R169", "ac": "HORTUM, 1/2\" 2SC 90+90 16S TB:1260 ORY:0 (REF:172128213)", "adet": "9", "kesim": "118", "capi": "0.5", "tip": "2SC", "b1k": "5251741308460000", "b1a": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "b2k": "5251741308460000", "b2a": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "sk": "5251741308160000", "sa": "Soket, 1/2\", H1200ad1, (1227981)", "ory": "0°", "sp": "YOK", "spk": ""}, {"no": 22, "kod": "5251721314060000", "raf": "R173", "ac": "HORTUM, 1/2\" 2SC DUZ+90° 16S TB:1180 (P.SPIRAL 400 MM)", "adet": "9", "kesim": "110.9", "capi": "0.5", "tip": "2SC", "b1k": "5251741308370000", "b1a": "Başlık, 1/2\", 16s, M24x1,5, Düz, Din 3865-Dkos (1200708)", "b2k": "5251741308460000", "b2a": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "sk": "5251741308160000", "sa": "Soket, 1/2\", H1200ad1, (1227981)", "ory": "", "sp": "DÜZ UCA 40", "spk": "48"}, {"no": 23, "kod": "5251721314380000", "raf": "R190", "ac": "HORTUM, 1/2\" 2SC DUZ+90° 16S TB:1010", "adet": "9", "kesim": "93.85", "capi": "0.5", "tip": "2SC", "b1k": "5251741308370000", "b1a": "Başlık, 1/2\", 16s, M24x1,5, Düz, Din 3865-Dkos (1200708)", "b2k": "5251741308460000", "b2a": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "sk": "5251741308160000", "sa": "Soket, 1/2\", H1200ad1, (1227981)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 24, "kod": "5251721314390000", "raf": "R192", "ac": "HORTUM, 1/2\" 2SC DUZ+90° 16S TB:1090", "adet": "9", "kesim": "101.85", "capi": "0.5", "tip": "2SC", "b1k": "5251741308370000", "b1a": "Başlık, 1/2\", 16s, M24x1,5, Düz, Din 3865-Dkos (1200708)", "b2k": "5251741308460000", "b2a": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "sk": "5251741308160000", "sa": "Soket, 1/2\", H1200ad1, (1227981)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 25, "kod": "5251721314410000", "raf": "R194", "ac": "HORTUM, 1/2\" 2SC DUZ+90° 16S TB:1060", "adet": "9", "kesim": "98.85", "capi": "0.5", "tip": "2SC", "b1k": "5251741308370000", "b1a": "Başlık, 1/2\", 16s, M24x1,5, Düz, Din 3865-Dkos (1200708)", "b2k": "5251741308460000", "b2a": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "sk": "5251741308160000", "sa": "Soket, 1/2\", H1200ad1, (1227981)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 26, "kod": "5251721314420000", "raf": "R199", "ac": "HORTUM, 1/2\" 2SC DUZ+90° 16S TB:960", "adet": "9", "kesim": "88.85", "capi": "0.5", "tip": "2SC", "b1k": "5251741308370000", "b1a": "Başlık, 1/2\", 16s, M24x1,5, Düz, Din 3865-Dkos (1200708)", "b2k": "5251741308460000", "b2a": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "sk": "5251741308160000", "sa": "Soket, 1/2\", H1200ad1, (1227981)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 27, "kod": "5251721314370000", "raf": "R84", "ac": "HORTUM, 1/2\" 2SC DUZ+90° 16S TB:950", "adet": "9", "kesim": "87.85", "capi": "0.5", "tip": "2SC", "b1k": "5251741308370000", "b1a": "Başlık, 1/2\", 16s, M24x1,5, Düz, Din 3865-Dkos (1200708)", "b2k": "5251741308460000", "b2a": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "sk": "5251741308160000", "sa": "Soket, 1/2\", H1200ad1, (1227981)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 28, "kod": "5251721314400000", "raf": "R198", "ac": "HORTUM, 1/2\" 2SC DUZ+90° 16S TB:940", "adet": "9", "kesim": "86.85", "capi": "0.5", "tip": "2SC", "b1k": "5251741308370000", "b1a": "Başlık, 1/2\", 16s, M24x1,5, Düz, Din 3865-Dkos (1200708)", "b2k": "5251741308460000", "b2a": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "sk": "5251741308160000", "sa": "Soket, 1/2\", H1200ad1, (1227981)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 29, "kod": "5255421311730000", "raf": "R185", "ac": "HORTUM, 1/2\" 2SC 90°+45° 16S TB:650 ORY:90(REF:172128207)", "adet": "9", "kesim": "55.5", "capi": "0.5", "tip": "2SC", "b1k": "5251741308460000", "b1a": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "b2k": "5251741308560000", "b2a": "Başlık, 1/2\", 16s, M24x1.5, Din 3865-Dkos  45 (1200712)", "sk": "5251741308160000", "sa": "Soket, 1/2\", H1200ad1, (1227981)", "ory": "90°", "sp": "YOK", "spk": ""}, {"no": 30, "kod": "5251721315270000", "raf": "", "ac": "HORTUM, 1/2 2SC 16 S 90° 90° TB:610 ORY:30°", "adet": "9", "kesim": "52.5", "capi": "0.5", "tip": "2SC", "b1k": "5251741308460000", "b1a": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "b2k": "5251741308460000", "b2a": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "sk": "5251741308160000", "sa": "Soket, 1/2\", H1200ad1, (1227981)", "ory": "30°", "sp": "YOK", "spk": ""}, {"no": 31, "kod": "5251721312210000", "raf": "R213", "ac": "HORTUM, 3/8\" 2SC DUZ+90 12S TB:1480 (REF:174106497)", "adet": "18", "kesim": "141.3", "capi": "0.375", "tip": "2SC", "b1k": "5251741308360000", "b1a": "Başlık, 3/8\", 12s, M20x1,5, Din 3865-Dkos (1200668)", "b2k": "5251741308450000", "b2a": "Başlık, 3/8\", 12s, M20x1,5, Din 3865-Dkos 90 (1200677)", "sk": "5251741308150000", "sa": "Soket, 3/8\", H1200ad1, (1227980)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 32, "kod": "5251721312220000", "raf": "R217", "ac": "HORTUM, 3/8\" 2SC DUZ+90 12S TB:1410 (REF:174106498)", "adet": "18", "kesim": "133.5", "capi": "0.375", "tip": "2SC", "b1k": "5251741308360000", "b1a": "Başlık, 3/8\", 12s, M20x1,5, Din 3865-Dkos (1200668)", "b2k": "5251741308450000", "b2a": "Başlık, 3/8\", 12s, M20x1,5, Din 3865-Dkos 90 (1200677)", "sk": "5251741308150000", "sa": "Soket, 3/8\", H1200ad1, (1227980)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 33, "kod": "5251721314030000", "raf": "R78", "ac": "HORTUM, 3/8\" 2SC 90°+90° 12S TB:1290 ORY:90°", "adet": "9", "kesim": "121", "capi": "0.375", "tip": "2SC", "b1k": "5251741308450000", "b1a": "Başlık, 3/8\", 12s, M20x1,5, Din 3865-Dkos 90 (1200677)", "b2k": "5251741308450000", "b2a": "Başlık, 3/8\", 12s, M20x1,5, Din 3865-Dkos 90 (1200677)", "sk": "5251741308150000", "sa": "Soket, 3/8\", H1200ad1, (1227980)", "ory": "90°", "sp": "YOK", "spk": ""}, {"no": 34, "kod": "5251721314090000", "raf": "R222", "ac": "HORTUM, 3/8\" 2SC 90°+90° 12S TB:1190 ORY:0", "adet": "9", "kesim": "112", "capi": "0.375", "tip": "2SC", "b1k": "5251741308450000", "b1a": "Başlık, 3/8\", 12s, M20x1,5, Din 3865-Dkos 90 (1200677)", "b2k": "5251741308450000", "b2a": "Başlık, 3/8\", 12s, M20x1,5, Din 3865-Dkos 90 (1200677)", "sk": "5251741308150000", "sa": "Soket, 3/8\", H1200ad1, (1227980)", "ory": "0°", "sp": "YOK", "spk": ""}, {"no": 35, "kod": "5251721315220000", "raf": "", "ac": "HORTUM, 3/8 1SC DUZ+DUZ 12L TB:4500", "adet": "10", "kesim": "445", "capi": "0.375", "tip": "1SC", "b1k": "5251741308330000", "b1a": "Başlık, 3/8\", 12l, M18x1,5, Din 3865-Dkol (1200667)", "b2k": "5251741308330000", "b2a": "Başlık, 3/8\", 12l, M18x1,5, Din 3865-Dkol (1200667)", "sk": "5251741308150000", "sa": "Soket, 3/8\", H1200ad1, (1227980)", "ory": "", "sp": "", "spk": ""}, {"no": 36, "kod": "5251721315250000", "raf": "", "ac": "HORTUM, 3/8 1SC DUZ+DUZ 12L TB:3800", "adet": "10", "kesim": "375", "capi": "0.375", "tip": "1SC", "b1k": "5251741308330000", "b1a": "Başlık, 3/8\", 12l, M18x1,5, Din 3865-Dkol (1200667)", "b2k": "5251741308330000", "b2a": "Başlık, 3/8\", 12l, M18x1,5, Din 3865-Dkol (1200667)", "sk": "5251741308150000", "sa": "Soket, 3/8\", H1200ad1, (1227980)", "ory": "", "sp": "", "spk": ""}, {"no": 37, "kod": "5251721314810000", "raf": "", "ac": "HORTUM, 3/8\" 1SC DUZ+90 12L TB:2100", "adet": "9", "kesim": "204", "capi": "0.375", "tip": "1SC", "b1k": "5251741308330000", "b1a": "Başlık, 3/8\", 12l, M18x1,5, Din 3865-Dkol (1200667)", "b2k": "5251741308440000", "b2a": "Başlık, 3/8\", 12l, M18x1.5, Din 3865-Dkol 90 (1200676)", "sk": "5251741308150000", "sa": "Soket, 3/8\", H1200ad1, (1227980)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 38, "kod": "5251721314820000", "raf": "", "ac": "HORTUM, 3/8\" 1SC DUZ+90 12L TB:1500", "adet": "9", "kesim": "144.18", "capi": "0.375", "tip": "1SC", "b1k": "5251741308330000", "b1a": "Başlık, 3/8\", 12l, M18x1,5, Din 3865-Dkol (1200667)", "b2k": "5251741308440000", "b2a": "Başlık, 3/8\", 12l, M18x1.5, Din 3865-Dkol 90 (1200676)", "sk": "5251741308150000", "sa": "Soket, 3/8\", H1200ad1, (1227980)", "ory": "", "sp": "", "spk": ""}, {"no": 39, "kod": "5251721314270000", "raf": "R221", "ac": "HORTUM, 3/8\" 1SC DUZ+90° 12L TB:1200", "adet": "9", "kesim": "114.2", "capi": "0.375", "tip": "1SC", "b1k": "5251741308330000", "b1a": "Başlık, 3/8\", 12l, M18x1,5, Din 3865-Dkol (1200667)", "b2k": "5251741308440000", "b2a": "Başlık, 3/8\", 12l, M18x1.5, Din 3865-Dkol 90 (1200676)", "sk": "5251741308150000", "sa": "Soket, 3/8\", H1200ad1, (1227980)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 40, "kod": "5251721313930000", "raf": "R88", "ac": "HORTUM, 3/8\" 1SC 90°+90° 12L TB:470 ORY: 90°", "adet": "9", "kesim": "40.44", "capi": "0.375", "tip": "1SC", "b1k": "5251741308440000", "b1a": "Başlık, 3/8\", 12l, M18x1.5, Din 3865-Dkol 90 (1200676)", "b2k": "5251741308440000", "b2a": "Başlık, 3/8\", 12l, M18x1.5, Din 3865-Dkol 90 (1200676)", "sk": "5251741308150000", "sa": "Soket, 3/8\", H1200ad1, (1227980)", "ory": "90°", "sp": "YOK", "spk": ""}, {"no": 41, "kod": "5251721314480000", "raf": "R89", "ac": "HORTUM, 3/8\" 1SC 90+90 12L TB:400 ORY:120 (REF:174106223)", "adet": "9", "kesim": "33", "capi": "0.375", "tip": "1SC", "b1k": "5251741308440000", "b1a": "Başlık, 3/8\", 12l, M18x1.5, Din 3865-Dkol 90 (1200676)", "b2k": "5251741308440000", "b2a": "Başlık, 3/8\", 12l, M18x1.5, Din 3865-Dkol 90 (1200676)", "sk": "5251741308150000", "sa": "Soket, 3/8\", H1200ad1, (1227980)", "ory": "120°", "sp": "YOK", "spk": ""}, {"no": 42, "kod": "5255421311430000", "raf": "R33", "ac": "HORTUM, 5/16\" 2SC DUZ+90 10S TB:1950 P.SPIRAL", "adet": "18", "kesim": "188.5", "capi": "0.3125", "tip": "2SC", "b1k": "5251741308350000", "b1a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos (1201832)", "b2k": "5251741308430000", "b2a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos 90 (1216700)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "", "sp": "TB", "spk": "230"}, {"no": 43, "kod": "5251721314080000", "raf": "R61", "ac": "HORTUM, 5/16\" 2SC 90°+90° 10S TB:1660 ORY:270°", "adet": "9", "kesim": "159", "capi": "0.3125", "tip": "2SC", "b1k": "5251741308430000", "b1a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos 90 (1216700)", "b2k": "5251741308430000", "b2a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos 90 (1216700)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "270°", "sp": "YOK", "spk": ""}, {"no": 44, "kod": "5255421311340000", "raf": "R64", "ac": "HORTUM, 5/16\" 2SC DUZ+90 10S TB:1650 (400 MM P.SPİRAL 90 BASLIKLI UCA)", "adet": "9", "kesim": "158", "capi": "0.3125", "tip": "2SC", "b1k": "5251741308350000", "b1a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos (1201832)", "b2k": "5251741308430000", "b2a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos 90 (1216700)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "", "sp": "90° BAŞLIĞA 40cm SPİRAL", "spk": "40"}, {"no": 45, "kod": "5255421312870000", "raf": "", "ac": "HORTUM, 5/16\" 2SC DUZ+DUZ 10S TB:1500", "adet": "9", "kesim": "144.5", "capi": "0.3125", "tip": "2SC", "b1k": "5251741308350000", "b1a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos (1201832)", "b2k": "5251741308350000", "b2a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos (1201832)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "", "sp": "YOK", "spk": "YOK"}, {"no": 46, "kod": "5255421311330000", "raf": "R10", "ac": "HORTUM, 5/16\" 2SC DUZ+90 10S TB:1500 (400 MM P.SPİRAL 90 BASLIKLI UCA)", "adet": "9", "kesim": "143.5", "capi": "0.3125", "tip": "2SC", "b1k": "5251741308350000", "b1a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos (1201832)", "b2k": "5251741308430000", "b2a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos 90 (1216700)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "", "sp": "90° BAŞLIĞA 40cm SPİRAL", "spk": "40"}, {"no": 47, "kod": "5251721313980000", "raf": "R41", "ac": "HORTUM, 5/16\" 2SC DUZ+90° 10L TB:1370", "adet": "9", "kesim": "130.92", "capi": "0.3125", "tip": "2SC", "b1k": "5251741308320000", "b1a": "Başlık, 5/16\", 10l, M16x1,5, Din 3865-Dkol (1200642)", "b2k": "5251741308420000", "b2a": "Başlık, 5/16\", 10l, M16x1.5, Din 3865-Dkol 90 (1200648)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 48, "kod": "5251721313910000", "raf": "R43", "ac": "HORTUM, 5/16\" 2SC (DÜZ 10S)+(90° 10L) TB:1250MM", "adet": "9", "kesim": "118", "capi": "0.3125", "tip": "2SC", "b1k": "5251741308350000", "b1a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos (1201832)", "b2k": "5251741308420000", "b2a": "Başlık, 5/16\", 10l, M16x1.5, Din 3865-Dkol 90 (1200648)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 49, "kod": "5251721313900000", "raf": "R46", "ac": "HORTUM, 5/16\" 2SC DÜZ+90° 10S TB:1050MM", "adet": "27", "kesim": "98.5", "capi": "0.3125", "tip": "2SC", "b1k": "5251741308350000", "b1a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos (1201832)", "b2k": "5251741308430000", "b2a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos 90 (1216700)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 50, "kod": "5251721312400000", "raf": "R51", "ac": "HORTUM, 5/16\" 2SC DUZ 10S+45° 10L TB:700 (REF:174106392)", "adet": "9", "kesim": "62.4", "capi": "0.3125", "tip": "2SC", "b1k": "5251741308350000", "b1a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos (1201832)", "b2k": "5251741308530000", "b2a": "Başlık, 5/16\", 10l, M16x1.5, Din 3865-Dkol  45 (1200645)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 51, "kod": "5251721314260000", "raf": "R27", "ac": "HORTUM, 5/16\" 2SC DUZ+DUZ 10L TB:540", "adet": "9", "kesim": "48", "capi": "0.3125", "tip": "2SC", "b1k": "5251741308320000", "b1a": "Başlık, 5/16\", 10l, M16x1,5, Din 3865-Dkol (1200642)", "b2k": "5251741308320000", "b2a": "Başlık, 5/16\", 10l, M16x1,5, Din 3865-Dkol (1200642)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 52, "kod": "5255421311770000", "raf": "R55", "ac": "HORTUM, 5/16\" 2SC  DUZ+90° 10S TB:600MM (REF:172107169)", "adet": "9", "kesim": "53", "capi": "0.3125", "tip": "2SC", "b1k": "5251741308350000", "b1a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos (1201832)", "b2k": "5251741308430000", "b2a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos 90 (1216700)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 53, "kod": "5251721315200000", "raf": "", "ac": "HORTUM, 5/16 1SC DUZ+90 10L TB:4700", "adet": "10", "kesim": "464", "capi": "0.3125", "tip": "1SC", "b1k": "5251741308320000", "b1a": "Başlık, 5/16, 10l, M16x1,5, Din 3865-Dkol (1200642)", "b2k": "5251741308420000", "b2a": "Başlık, 5/16\", 10l, M16x1.5, Din 3865-Dkol 90 (1200648)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "", "sp": "", "spk": ""}, {"no": 54, "kod": "5251721315210000", "raf": "", "ac": "HORTUM, 5/16 1SC DUZ+DUZ 10L TB:4000", "adet": "10", "kesim": "395", "capi": "0.3125", "tip": "1SC", "b1k": "5251741308320000", "b1a": "Başlık, 5/16, 10l, M16x1,5, Din 3865-Dkol (1200642)", "b2k": "5251741308320000", "b2a": "Başlık, 5/16, 10l, M16x1,5, Din 3865-Dkol (1200642)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "", "sp": "", "spk": ""}, {"no": 55, "kod": "5255421312410000", "raf": "R6", "ac": "HORTUM, 5/16\" 1SC DUZ+90 10L TB:2370", "adet": "9", "kesim": "231.3", "capi": "0.3125", "tip": "1SC", "b1k": "5251741308320000", "b1a": "Başlık, 5/16\", 10l, M16x1,5, Din 3865-Dkol (1200642)", "b2k": "5251741308420000", "b2a": "Başlık, 5/16\", 10l, M16x1.5, Din 3865-Dkol 90 (1200648)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 56, "kod": "5255421311250000", "raf": "R39", "ac": "HORTUM, 5/16\" 1SC 90+90 10L TB:1400 ORY:270(REF:544106153)", "adet": "9", "kesim": "132.2", "capi": "0.3125", "tip": "1SC", "b1k": "5251741308420000", "b1a": "Başlık, 5/16\", 10l, M16x1.5, Din 3865-Dkol 90 (1200648)", "b2k": "5251741308420000", "b2a": "Başlık, 5/16\", 10l, M16x1.5, Din 3865-Dkol 90 (1200648)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "270°", "sp": "YOK", "spk": ""}, {"no": 57, "kod": "5255421312250000", "raf": "R50", "ac": "HORTUM, 5/16\" 1SC 90+90 10L ORY:90 TB:700", "adet": "9", "kesim": "63.26", "capi": "0.3125", "tip": "1SC", "b1k": "5251741308420000", "b1a": "Başlık, 5/16\", 10l, M16x1.5, Din 3865-Dkol 90 (1200648)", "b2k": "5251741308420000", "b2a": "Başlık, 5/16\", 10l, M16x1.5, Din 3865-Dkol 90 (1200648)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "90°", "sp": "YOK", "spk": ""}, {"no": 58, "kod": "5255421312260000", "raf": "R26", "ac": "HORTUM, 5/16\" 1SC 90+90 10L ORY:0 TB:600", "adet": "9", "kesim": "53.26", "capi": "0.3125", "tip": "1SC", "b1k": "5251741308420000", "b1a": "Başlık, 5/16\", 10l, M16x1.5, Din 3865-Dkol 90 (1200648)", "b2k": "5251741308420000", "b2a": "Başlık, 5/16\", 10l, M16x1.5, Din 3865-Dkol 90 (1200648)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "0°", "sp": "YOK", "spk": ""}, {"no": 59, "kod": "5251721313940000", "raf": "R59", "ac": "HORTUM, 5/16 1SC DUZ+90° 10L TB:370", "adet": "9", "kesim": "31.31", "capi": "0.3125", "tip": "1SC", "b1k": "5251741308420000", "b1a": "Başlık, 5/16\", 10l, M16x1.5, Din 3865-Dkol 90 (1200648)", "b2k": "5251741308320000", "b2a": "Başlık, 5/16\", 10l, M16x1,5, Din 3865-Dkol (1200642)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "", "sp": "YOK", "spk": ""}, {"no": 60, "kod": "5251721313640000", "raf": "R86", "ac": "HORTUM, 5/16\" 1SC 90+90 10L TB:340 ORY:180 (REF:174106226)", "adet": "9", "kesim": "26.4", "capi": "0.3125", "tip": "1SC", "b1k": "5251741308420000", "b1a": "Başlık, 5/16\", 10l, M16x1.5, Din 3865-Dkol 90 (1200648)", "b2k": "5251741308420000", "b2a": "Başlık, 5/16\", 10l, M16x1.5, Din 3865-Dkol 90 (1200648)", "sk": "5251741308140000", "sa": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "180°", "sp": "YOK", "spk": ""}];
+
+var opAd = '', opUretimNo = '', bulunanKalem = null;
+
+var QUICK = ['R248','R104','R129','R152','R33','R213','R78','R46'];
+var chipsEl = document.getElementById('chips');
+QUICK.forEach(function(r) {
+  var c = document.createElement('div');
+  c.className = 'chip';
+  c.textContent = r;
+  c.onclick = function() { document.getElementById('inp').value = r; doSearch(); };
+  chipsEl.appendChild(c);
+});
+
+function operatorKaydet() {
+  var ad = document.getElementById('adSoyad').value.trim();
+  var no = document.getElementById('uretimNo').value.trim();
+  if (!ad) { showToast('Ad soyad girin!', 'err'); return; }
+  if (!no) { showToast('Uretim no girin!', 'err'); return; }
+  opAd = ad;
+  opUretimNo = no;
+  document.getElementById('opBadgeText').textContent = ad + ' — Üretim No: ' + no;
+  document.getElementById('opBadge').classList.add('show');
+  document.getElementById('opInputs').style.display = 'none';
+  document.getElementById('opTitle').textContent = 'Operatör';
+  showToast('Kaydedildi!');
+  if (bulunanKalem) renderKaydetBtn();
+}
+
+function operatorDegistir() {
+  opAd = ''; opUretimNo = ''; bulunanKalem = null;
+  document.getElementById('opBadge').classList.remove('show');
+  document.getElementById('opInputs').style.display = '';
+  document.getElementById('opTitle').textContent = 'Operatör bilgileri';
+  var kw = document.querySelector('.kaydet-wrap');
+  if (kw) kw.remove();
+}
+
+function isYok(v) {
+  if (v === null || v === undefined) return true;
+  var s = String(v).trim();
+  return s === '' || s === 'YOK' || s === 'BASLIK YOK' || s === 'BAŞLIK YOK' || s === '-';
+}
+
+
+
+function row(lbl, val) {
+  var y = isYok(val);
+  return '<div class="crow"><span class="crow-lbl">' + lbl + '</span><span class="crow-val' + (y ? ' crow-yok' : '') + '">' + (y ? '—' : val) + '</span></div>';
+}
+
+function renderKaydetBtn() {
+  var old = document.querySelector('.kaydet-wrap');
+  if (old) old.remove();
+  if (!opAd || !opUretimNo) return;
+  var wrap = document.createElement('div');
+  wrap.className = 'kaydet-wrap';
+  wrap.innerHTML = '<button class="btn-kaydet" id="btnKaydet" onclick="kaydet()">Üretimi Kaydet → Google Sheets</button>';
+  document.getElementById('results').after(wrap);
+}
+
+function renderCard(d) {
+  bulunanKalem = d;
+  return '<div class="rcard">' +
+    '<div class="rcard-hd">' +
+      '<div class="rcard-meta">' +
+        '<span class="badge badge-no">#' + d.no + '</span>' +
+        (d.raf ? '<span class="badge">' + d.raf + '</span>' : '') +
+      '</div>' +
+      '<div class="rcard-title">' + d.ac + '</div>' +
+    '</div>' +
+    '<div class="rcard-body">' +
+      '<div class="clist">' +
+        row('Kalem açıklaması', d.ac) +
+        row('Raf no', d.raf || '') +
+        row('Kesim boyu', d.kesim ? d.kesim + ' cm' : '') +
+        row('Başlık - 1', d.b1k) +
+        row('Başlık -1 açıklama', d.b1a) +
+        row('Başlık-2', d.b2k) +
+        row('Başlık -2 açıklama', d.b2a) +
+        row('Soket', d.sk) +
+        row('Soket açıklama', d.sa) +
+        row('ORY', d.ory || '') +
+        row('Spiral', d.sp || '') +
+        row('Spiral kesim', d.spk ? d.spk + ' mm' : '') +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function doSearch(q) {
+  if (!q) q = document.getElementById('inp').value.trim().toUpperCase();
+  else q = String(q).toUpperCase();
+  var out = document.getElementById('results');
+  if (!q) { showEmpty(); return; }
+  var found = DATA.filter(function(d) {
+    return d.kod.indexOf(q) !== -1 || (d.raf && d.raf.toUpperCase() === q);
+  });
+  if (!found.length) {
+    bulunanKalem = null;
+    var kw = document.querySelector('.kaydet-wrap'); if (kw) kw.remove();
+    out.innerHTML = '<div class="notfound"><p>Bulunamadı: <strong>' + q + '</strong></p><p class="notfound-hint">Kodu kontrol edip tekrar deneyin</p></div>';
+  } else {
+    out.innerHTML = found.map(renderCard).join('');
+    out.scrollTop = 0;
+    renderKaydetBtn();
+  }
+}
+
+function showEmpty() {
+  bulunanKalem = null;
+  var kw = document.querySelector('.kaydet-wrap'); if (kw) kw.remove();
+  document.getElementById('results').innerHTML = '<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="empty-t">Operatör bilgilerini girin</div><div class="empty-s">Ad soyad ve üretim numarasını girdikten sonra kalem kodu arayabilirsiniz</div></div>';
+}
+
+function kaydet() {
+  if (!opAd || !opUretimNo) { showToast('Önce operatör bilgilerini girin!', 'err'); return; }
+  if (!bulunanKalem) { showToast('Önce kalem kodu arayın!', 'err'); return; }
+  var btn = document.getElementById('btnKaydet');
+  btn.disabled = true; btn.textContent = 'Kaydediliyor...';
+  var simdi = new Date();
+  var tarih = simdi.toLocaleDateString('tr-TR') + ' ' + simdi.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
+  var payload = {
+    tarih: tarih,
+    adSoyad: opAd,
+    uretimNo: opUretimNo,
+    kalemKodu: bulunanKalem.kod,
+    rafNo: bulunanKalem.raf || '',
+    aciklama: bulunanKalem.ac,
+    kesimCm: bulunanKalem.kesim ? bulunanKalem.kesim + ' cm' : ''
+  };
+  fetch(SHEET_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  }).then(function() {
+    showToast("Google Sheets'e kaydedildi!");
+    btn.textContent = 'Kaydedildi!';
+    btn.style.background = 'var(--surface2)';
+    btn.style.color = 'var(--green)';
+    setTimeout(function() {
+      btn.disabled = false;
+      btn.textContent = 'Üretimi Kaydet → Google Sheets';
+      btn.style.background = ''; btn.style.color = '';
+    }, 3000);
+  }).catch(function() {
+    showToast('Bağlantı hatası!', 'err');
+    btn.disabled = false; btn.textContent = 'Üretimi Kaydet → Google Sheets';
+  });
+}
+
+function showToast(msg, tip) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (tip ? ' ' + tip : '');
+  setTimeout(function() { t.classList.add('show'); }, 10);
+  setTimeout(function() { t.classList.remove('show'); }, 2800);
+}
+
+document.getElementById('inp').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doSearch();
+});
+
+</script>
+</body>
+</html>
