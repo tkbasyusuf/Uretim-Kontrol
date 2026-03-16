@@ -533,10 +533,14 @@ function showCard(item) {
       <div class="detail-list">
         <div class="dl-row"><span class="dl-lbl">SKU Kodu</span><span class="dl-val mono">${_sku}</span></div>
         <div class="dl-row"><span class="dl-lbl">Kalem Açıklaması</span><span class="dl-val">${_acik}</span></div>
-        <div class="dl-row"><span class="dl-lbl">Tedarikçi</span><span class="dl-val">${ted || '—'}</span></div>
-        <div class="dl-row"><span class="dl-lbl">Depo Kodu</span><span class="dl-val mono">${depo || '—'}</span></div>
-        ${mst ? `<div class="dl-row"><span class="dl-lbl">MST Kodu</span><span class="dl-val mono">${mst}</span></div>` : ''}
-        ${els ? `<div class="dl-row"><span class="dl-lbl">ELS Kodu</span><span class="dl-val mono">${els}</span></div>` : ''}
+        <div class="dl-row"><span class="dl-lbl">Tedarikçi -1</span><span class="dl-val">${item['Tedarikçi -1']||item.tedarikci1||'—'}</span></div>
+        <div class="dl-row"><span class="dl-lbl">Tedarikçi -2</span><span class="dl-val">${item['Tedarikçi -2']||item.tedarikci2||'—'}</span></div>
+        <div class="dl-row"><span class="dl-lbl">Depo Kodu -1</span><span class="dl-val mono">${item['Depo Kodu -1 ']||item['Depo Kodu -1']||item.depo_kodu1||'—'}</span></div>
+        <div class="dl-row"><span class="dl-lbl">Depo Kodu -2</span><span class="dl-val mono">${item['Depo Kodu -2']||item.depo_kodu2||'—'}</span></div>
+        ${item['MST-1 KOD']||item.mst1 ? `<div class="dl-row"><span class="dl-lbl">MST-1 KOD</span><span class="dl-val mono">${item['MST-1 KOD']||item.mst1||'—'}</span></div>` : ''}
+        ${item['MST-2 KOD']||item.mst2 ? `<div class="dl-row"><span class="dl-lbl">MST-2 KOD</span><span class="dl-val mono">${item['MST-2 KOD']||item.mst2||'—'}</span></div>` : ''}
+        ${item['ELS-1 KOD']||item.els1 ? `<div class="dl-row"><span class="dl-lbl">ELS-1 KOD</span><span class="dl-val mono">${item['ELS-1 KOD']||item.els1||'—'}</span></div>` : ''}
+        ${item['ELS-2 KOD']||item.els2 ? `<div class="dl-row"><span class="dl-lbl">ELS-2 KOD</span><span class="dl-val mono">${item['ELS-2 KOD']||item.els2||'—'}</span></div>` : ''}
         <div class="dl-row"><span class="dl-lbl">Malzeme Tipi</span><span class="dl-val">${_tip || '—'}</span></div>
         <div class="dl-row"><span class="dl-lbl">Ölçü Birimi</span><span class="dl-val">${_birim || '—'}</span></div>
         <div class="dl-row"><span class="dl-lbl">Birim Ağırlık</span><span class="dl-val">${_agir} gr</span></div>
