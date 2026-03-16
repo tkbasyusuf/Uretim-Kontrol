@@ -3,1024 +3,836 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Depo Stok Yönetimi</title>
+<title>Depo Stok</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  :root {
-    --bg: #f4f3ef; --card: #ffffff; --border: #e2e0d8;
-    --text: #1a1916; --muted: #7a7870; --accent: #1a1916;
-    --ok: #2d6a4f; --ok-bg: #d8f3dc;
-    --warn: #7d4e00; --warn-bg: #ffe8a1;
-    --danger: #9b1c1c; --danger-bg: #fde8e8;
-    --radius: 14px; --font: 'Georgia', serif; --mono: 'Courier New', monospace;
-  }
-  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #f4f3ef; --card: #fff; --border: #e2e0d8;
+  --text: #1a1916; --muted: #7a7870; --accent: #1a1916;
+  --ok: #2d6a4f; --ok-bg: #d8f3dc;
+  --warn: #7d4e00; --warn-bg: #ffe8a1;
+  --danger: #9b1c1c; --danger-bg: #fde8e8;
+  --r: 12px; --font: Georgia, serif; --mono: "Courier New", monospace;
+}
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
 
-  /* ── SCREENS ── */
-  .screen { display: none; }
-  #screen1.active { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem 1.5rem; }
-  #screen2.active, #screen3.active, #screen4.active { display: block; }
+/* LOGIN */
+.login-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem 1.5rem; }
+.login-wrap h1 { font-size: 2rem; font-weight: normal; margin-bottom: 6px; }
+.login-wrap p { font-size: 0.9rem; color: var(--muted); font-style: italic; margin-bottom: 2.5rem; }
+.login-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 1.75rem; width: 100%; max-width: 360px; }
+.lbl { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 7px; }
+.inp { width: 100%; padding: 13px 15px; font-size: 1rem; font-family: var(--font); border: 1px solid var(--border); border-radius: 9px; background: var(--bg); color: var(--text); outline: none; margin-bottom: 14px; }
+.inp:focus { border-color: var(--accent); }
+.btn-blk { width: 100%; padding: 14px; font-size: 1rem; font-family: var(--font); background: var(--accent); color: #fff; border: none; border-radius: 9px; cursor: pointer; }
+.btn-blk:disabled { opacity: 0.5; cursor: not-allowed; }
+.login-msg { text-align: center; font-size: 0.82rem; margin-top: 10px; min-height: 20px; }
 
-  /* ── LOGIN ── */
-  .logo-wrap { text-align: center; margin-bottom: 3rem; }
-  .logo-wrap h1 { font-size: 2rem; font-weight: normal; letter-spacing: -0.5px; }
-  .logo-wrap p { font-size: 0.9rem; color: var(--muted); margin-top: 6px; font-style: italic; }
-  .login-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; width: 100%; max-width: 380px; }
-  .login-card label { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 8px; }
-  .big-input { width: 100%; padding: 14px 16px; font-size: 1.1rem; font-family: var(--font); border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); margin-bottom: 16px; outline: none; }
-  .big-input:focus { border-color: var(--accent); }
-  .btn-primary { width: 100%; padding: 15px; font-size: 1rem; font-family: var(--font); background: var(--accent); color: #fff; border: none; border-radius: 10px; cursor: pointer; }
-  .btn-primary:active { opacity: 0.85; }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+/* LAYOUT */
+#app { display: none; }
+.topbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; position: sticky; top: 0; z-index: 10; }
+.topbar-title { font-size: 1rem; flex: 1; }
+.topbar-op { font-size: 0.75rem; color: var(--muted); font-style: italic; margin-right: 10px; }
+.btn-sm { padding: 5px 12px; font-size: 0.75rem; font-family: var(--font); border: 1px solid var(--border); border-radius: 7px; background: transparent; cursor: pointer; color: var(--muted); }
 
-  /* ── TOP BAR ── */
-  .top-bar { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 10; }
-  .app-title { font-size: 1rem; font-weight: normal; flex: 1; }
-  .op-tag { font-size: 0.75rem; color: var(--muted); font-style: italic; }
-  .btn-sm { padding: 6px 12px; font-size: 0.75rem; font-family: var(--font); border: 1px solid var(--border); border-radius: 8px; background: transparent; cursor: pointer; color: var(--muted); }
+/* TABS */
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--card); border-bottom: 1px solid var(--border); }
+.tab { padding: 11px 8px; text-align: center; font-size: 0.78rem; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; font-family: var(--font); background: none; border-top: none; border-left: none; border-right: none; }
+.tab.on { color: var(--text); border-bottom-color: var(--text); }
 
-  /* ── NAV TABS ── */
-  .nav-tabs { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--card); border-bottom: 1px solid var(--border); }
-  .nav-tab { padding: 12px 8px; text-align: center; font-size: 0.78rem; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; font-family: var(--font); background: none; border-top: none; border-left: none; border-right: none; }
-  .nav-tab.active { color: var(--text); border-bottom-color: var(--text); }
+.content { padding: 14px; max-width: 700px; margin: 0 auto; }
+.panel { display: none; }
+.panel.on { display: block; }
 
-  /* ── CONTENT ── */
-  .content { padding: 16px; }
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
+/* CARD */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); margin-bottom: 12px; overflow: hidden; }
+.card-head { padding: 13px 15px; border-bottom: 1px solid var(--border); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: normal; }
 
-  /* ── SEARCH ── */
-  .search-wrap { position: relative; margin-bottom: 12px; }
-  .search-wrap input { width: 100%; padding: 14px 42px 14px 16px; font-size: 1rem; font-family: var(--font); border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); outline: none; }
-  .search-wrap input:focus { border-color: var(--accent); }
-  .clear-x { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--muted); display: none; }
-  .suggestions { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 12px; display: none; }
-  .sug-item { padding: 13px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
-  .sug-item:last-child { border-bottom: none; }
-  .sug-item:active { background: var(--bg); }
-  .sug-name { font-size: 0.88rem; color: var(--text); line-height: 1.4; }
-  .sug-sku { font-size: 0.72rem; font-family: var(--mono); color: var(--muted); margin-top: 2px; }
+/* SEARCH */
+.search-wrap { position: relative; margin-bottom: 10px; }
+.search-inp { width: 100%; padding: 13px 40px 13px 15px; font-size: 1rem; font-family: var(--font); border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); outline: none; }
+.search-inp:focus { border-color: var(--accent); }
+.search-x { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--muted); display: none; }
+.sugg { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); margin-bottom: 10px; display: none; overflow: hidden; }
+.sugg-item { padding: 12px 15px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.sugg-item:last-child { border-bottom: none; }
+.sugg-item:active { background: var(--bg); }
+.sugg-name { font-size: 0.87rem; line-height: 1.4; }
+.sugg-sub { font-size: 0.71rem; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+.tag { display: inline-block; font-size: 0.65rem; background: #e8f4fd; color: #1a6496; padding: 1px 6px; border-radius: 4px; margin-left: 5px; }
 
-  /* ── RESULT CARD ── */
-  .result-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
-  .rc-head { padding: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-  .rc-name { font-size: 0.93rem; line-height: 1.5; flex: 1; }
-  .status-pill { flex-shrink: 0; padding: 4px 12px; border-radius: 20px; font-size: 0.73rem; font-weight: bold; }
-  .pill-ok { background: var(--ok-bg); color: var(--ok); }
-  .pill-warn { background: var(--warn-bg); color: var(--warn); }
-  .pill-danger { background: var(--danger-bg); color: var(--danger); }
-  .stock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
-  .stock-cell { background: var(--card); padding: 14px; text-align: center; }
-  .stock-lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 4px; }
-  .stock-val { font-size: 1.9rem; font-weight: normal; color: var(--text); line-height: 1; }
-  .stock-unit { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
-  .detail-list { padding: 0 16px; }
-  .dl-row { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 12px; font-size: 0.88rem; }
-  .dl-row:last-child { border-bottom: none; }
-  .dl-lbl { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); white-space: nowrap; }
-  .dl-val { color: var(--text); text-align: right; word-break: break-word; }
-  .dl-val.mono { font-family: var(--mono); font-size: 0.78rem; }
+/* DETAY KART */
+.det-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 12px; }
+.det-head { padding: 14px 15px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.det-name { font-size: 0.92rem; line-height: 1.5; flex: 1; }
+.pill { flex-shrink: 0; padding: 3px 11px; border-radius: 20px; font-size: 0.72rem; font-weight: bold; }
+.pill-ok { background: var(--ok-bg); color: var(--ok); }
+.pill-warn { background: var(--warn-bg); color: var(--warn); }
+.pill-crit { background: var(--danger-bg); color: var(--danger); }
+.stok-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
+.stok-cell { background: var(--card); padding: 13px; text-align: center; }
+.stok-lbl { font-size: 0.67rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 4px; }
+.stok-val { font-size: 1.85rem; line-height: 1; }
+.stok-unit { font-size: 0.71rem; color: var(--muted); margin-top: 3px; }
+.det-rows { padding: 0 15px; }
+.det-row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 0.87rem; gap: 12px; }
+.det-row:last-child { border-bottom: none; }
+.det-lbl { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); white-space: nowrap; }
+.det-val { color: var(--text); text-align: right; word-break: break-word; }
+.det-val.mono { font-family: var(--mono); font-size: 0.77rem; }
 
-  /* ── WEIGHT CALC ── */
-  .weight-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
-  .wc-head { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
-  .wc-body { padding: 16px; }
-  .wc-row { display: flex; gap: 10px; align-items: center; }
-  .wc-input { flex: 1; padding: 12px 14px; font-size: 1rem; font-family: var(--font); border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); outline: none; }
-  .wc-result { margin-top: 12px; padding: 14px; background: var(--bg); border-radius: 10px; text-align: center; display: none; }
-  .wc-result-val { font-size: 1.7rem; color: var(--text); }
-  .wc-result-lbl { font-size: 0.72rem; color: var(--muted); margin-top: 3px; font-style: italic; }
+/* AĞIRLIK HESAP */
+.agir-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 12px; }
+.agir-body { padding: 14px; }
+.agir-row { display: flex; gap: 10px; align-items: center; }
+.agir-inp { flex: 1; padding: 11px 13px; font-size: 1rem; font-family: var(--font); border: 1.5px solid var(--border); border-radius: 9px; background: var(--bg); color: var(--text); outline: none; }
+.agir-res { margin-top: 11px; padding: 13px; background: var(--bg); border-radius: 9px; text-align: center; display: none; }
+.agir-val { font-size: 1.6rem; }
+.agir-sub { font-size: 0.71rem; color: var(--muted); margin-top: 3px; font-style: italic; }
 
-  /* ── FORM (Giriş/Çıkış) ── */
-  .form-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 14px; }
-  .form-card h3 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 1rem; font-weight: normal; }
-  .form-group { margin-bottom: 14px; }
-  .form-group label { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 6px; }
-  .form-group input, .form-group select { width: 100%; padding: 12px 14px; font-size: 0.95rem; font-family: var(--font); border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); outline: none; }
-  .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .btn-giris { width: 100%; padding: 14px; font-size: 0.95rem; font-family: var(--font); background: var(--ok-bg); color: var(--ok); border: 1px solid var(--ok); border-radius: 10px; cursor: pointer; font-weight: bold; }
-  .btn-cikis { width: 100%; padding: 14px; font-size: 0.95rem; font-family: var(--font); background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-  .btn-giris:active, .btn-cikis:active { opacity: 0.8; }
-  .btn-giris:disabled, .btn-cikis:disabled { opacity: 0.5; cursor: not-allowed; }
+/* GİRİŞ/ÇIKIŞ FORM */
+.fgrp { margin-bottom: 13px; }
+.fgrp .lbl { margin-bottom: 6px; }
+.frow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sku-info { font-size: 0.8rem; color: var(--muted); font-style: italic; margin: -7px 0 11px 2px; min-height: 18px; }
+.sku-info.err { color: var(--danger); }
+select.inp { appearance: none; -webkit-appearance: none; }
+.btn-giris { width: 100%; padding: 13px; font-size: 0.93rem; font-family: var(--font); background: var(--ok-bg); color: var(--ok); border: 1px solid var(--ok); border-radius: 9px; cursor: pointer; font-weight: bold; margin-top: 4px; }
+.btn-cikis { width: 100%; padding: 13px; font-size: 0.93rem; font-family: var(--font); background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); border-radius: 9px; cursor: pointer; font-weight: bold; margin-top: 8px; }
+.btn-giris:disabled, .btn-cikis:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-giris:active, .btn-cikis:active { opacity: 0.8; }
 
-  /* ── HAREKETLER LİSTESİ ── */
-  .hareket-item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
-  .hareket-badge { flex-shrink: 0; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; }
-  .badge-giris { background: var(--ok-bg); color: var(--ok); }
-  .badge-cikis { background: var(--danger-bg); color: var(--danger); }
-  .hareket-info { flex: 1; }
-  .hareket-aciklama { font-size: 0.82rem; color: var(--text); line-height: 1.3; }
-  .hareket-meta { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
-  .hareket-miktar { font-size: 1rem; font-weight: normal; color: var(--text); white-space: nowrap; }
+/* TOPLU */
+.toplu-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.toplu-btn { padding: 11px; font-size: 0.83rem; font-family: var(--font); border: 1px solid var(--border); border-radius: 9px; background: var(--bg); cursor: pointer; color: var(--muted); text-align: center; }
+.toplu-btn.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.upload-area { border: 2px dashed var(--border); border-radius: var(--r); padding: 1.75rem; text-align: center; cursor: pointer; margin-bottom: 12px; transition: border-color 0.2s; }
+.upload-area:hover { border-color: var(--accent); }
+.upload-icon { font-size: 1.9rem; margin-bottom: 7px; }
+.upload-txt { font-size: 0.85rem; color: var(--muted); font-style: italic; }
+#fileInput { display: none; }
+.prev-wrap { margin-bottom: 12px; }
+.prev-count { font-size: 0.77rem; color: var(--muted); margin-bottom: 7px; }
+.prev-item { display: flex; justify-content: space-between; align-items: center; padding: 9px 13px; border-bottom: 1px solid var(--border); font-size: 0.82rem; background: var(--card); }
+.prev-item:last-child { border-bottom: none; }
+.prev-item.err { background: var(--danger-bg); }
+.prev-sku { font-family: var(--mono); font-size: 0.71rem; color: var(--muted); margin-top: 2px; }
+.prev-miktar { font-weight: bold; white-space: nowrap; }
+.btn-toplu-giris { width: 100%; padding: 13px; font-size: 0.93rem; font-family: var(--font); background: var(--ok-bg); color: var(--ok); border: 1px solid var(--ok); border-radius: 9px; cursor: pointer; font-weight: bold; display: none; }
+.btn-toplu-cikis { width: 100%; padding: 13px; font-size: 0.93rem; font-family: var(--font); background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); border-radius: 9px; cursor: pointer; font-weight: bold; margin-top: 8px; display: none; }
 
-  /* ── UYARI KARTI ── */
-  .warn-card { background: var(--warn-bg); border: 1px solid #f0c040; border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; }
-  .warn-card-title { font-size: 0.78rem; font-weight: bold; color: var(--warn); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .warn-card-sku { font-size: 0.72rem; font-family: var(--mono); color: var(--muted); }
-  .warn-card-stocks { font-size: 0.82rem; color: var(--warn); margin-top: 4px; }
+/* UYARILAR */
+.ozet-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.ozet-cell { border-radius: var(--r); padding: 14px; text-align: center; }
+.ozet-num { font-size: 1.8rem; font-weight: bold; line-height: 1; }
+.ozet-lbl { font-size: 0.67rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+.rapor-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.btn-rapor-all { padding: 12px; font-size: 0.82rem; font-family: var(--font); background: var(--accent); color: #fff; border: none; border-radius: 9px; cursor: pointer; }
+.btn-rapor-crit { padding: 12px; font-size: 0.82rem; font-family: var(--font); background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); border-radius: 9px; cursor: pointer; }
+.warn-item { background: var(--card); border: 1px solid var(--border); border-radius: 9px; padding: 11px 14px; margin-bottom: 9px; }
+.warn-item.crit { background: var(--danger-bg); border-color: #e57373; }
+.warn-item.warn { background: var(--warn-bg); border-color: #f0c040; }
+.warn-name { font-size: 0.83rem; font-weight: bold; }
+.warn-sku { font-size: 0.71rem; font-family: var(--mono); color: var(--muted); margin-top: 2px; }
+.warn-stok { font-size: 0.8rem; margin-top: 4px; }
+.sec-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 8px; padding: 0 2px; }
 
-  /* ── EMPTY STATE ── */
-  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
-  .empty-icon { font-size: 2.2rem; margin-bottom: 10px; }
-  .empty-text { font-size: 0.9rem; font-style: italic; }
-
-  /* ── TOAST ── */
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 0.88rem; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
-  .toast.show { opacity: 1; }
-  .toast.error { background: var(--danger); }
-  .toast.success { background: var(--ok); }
-
-  /* ── LOADING ── */
-  .loading { text-align: center; padding: 2rem; color: var(--muted); font-style: italic; font-size: 0.9rem; }
-
-  /* ── EXCEL YÜKLEME ── */
-  .upload-area { border: 2px dashed var(--border); border-radius: var(--radius); padding: 2rem; text-align: center; cursor: pointer; margin-bottom: 14px; }
-  .upload-area:hover { border-color: var(--accent); }
-  .upload-icon { font-size: 2rem; margin-bottom: 8px; }
-  .upload-text { font-size: 0.88rem; color: var(--muted); font-style: italic; }
-  #fileInput { display: none; }
-  .excel-preview { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
-  .excel-row { display: flex; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 0.83rem; }
-  .excel-row:last-child { border-bottom: none; }
-  .excel-row .sku { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
-  .excel-row .miktar { font-weight: bold; color: var(--danger); }
-  .excel-row.err { background: var(--danger-bg); }
-  .excel-row.err .sku { color: var(--danger); }
-  .toplu-tab { padding: 10px; font-size: 0.85rem; font-family: var(--font); border: 1px solid var(--border); border-radius: 10px; background: var(--bg); cursor: pointer; color: var(--muted); }
-  .toplu-tab.active-tab { background: var(--accent); color: #fff; border-color: var(--accent); }
+/* EMPTY / TOAST */
+.empty { text-align: center; padding: 2.5rem 1rem; color: var(--muted); }
+.empty-icon { font-size: 2rem; margin-bottom: 8px; }
+.empty-txt { font-size: 0.88rem; font-style: italic; }
+.toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); padding: 11px 20px; border-radius: 9px; font-size: 0.87rem; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; background: var(--text); color: #fff; }
+.toast.show { opacity: 1; }
+.toast.ok { background: var(--ok); }
+.toast.err { background: var(--danger); }
 </style>
 </head>
 <body>
 
-<!-- ── EKRAN 1: GİRİŞ ── -->
-<div class="screen" id="screen1">
-  <div class="logo-wrap">
-    <h1>Depo Stok</h1>
-    <p>Hammadde yönetim sistemi</p>
-  </div>
+<!-- LOGIN -->
+<div id="login" class="login-wrap">
+  <h1>Depo Stok</h1>
+  <p>Hammadde yönetim sistemi</p>
   <div class="login-card">
-    <label for="opInput">Operatör adı</label>
-    <input type="text" class="big-input" id="opInput" placeholder="Adınızı girin..." autocomplete="off" />
-    <button class="btn-primary" id="loginBtn" onclick="startSession()">Giriş</button>
-    <div id="loginMsg" style="text-align:center;font-size:0.82rem;margin-top:10px;display:none"></div>
+    <label class="lbl" for="opInp">Operatör adı</label>
+    <input class="inp" id="opInp" type="text" placeholder="Adınızı girin..." autocomplete="off" />
+    <button class="btn-blk" id="loginBtn" onclick="girisYap()">Giriş</button>
+    <div class="login-msg" id="loginMsg"></div>
   </div>
 </div>
 
-<!-- ── EKRAN 2: ANA UYGULAMA ── -->
-<div class="screen" id="screen2">
-  <div class="top-bar">
-    <span class="app-title">Depo Stok</span>
-    <span class="op-tag" id="opTag"></span>
-    <button class="btn-sm" onclick="changeOp()">Çıkış</button>
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <span class="topbar-title">Depo Stok</span>
+    <span class="topbar-op" id="opTag"></span>
+    <button class="btn-sm" onclick="cikisYap()">Çıkış</button>
   </div>
-
-  <div class="nav-tabs">
-    <button class="nav-tab active" onclick="showTab('sorgula')">Sorgula</button>
-    <button class="nav-tab" onclick="showTab('hareket')">Giriş / Çıkış</button>
-    <button class="nav-tab" onclick="showTab('uyarilar')">Uyarılar</button>
+  <div class="tabs">
+    <button class="tab on" onclick="sekme('sorgula',this)">Sorgula</button>
+    <button class="tab" onclick="sekme('hareket',this)">Giriş / Çıkış</button>
+    <button class="tab" onclick="sekme('uyarilar',this)">Uyarılar</button>
   </div>
-
   <div class="content">
 
     <!-- SORGULA -->
-    <div class="tab-panel active" id="tab-sorgula">
+    <div class="panel on" id="p-sorgula">
       <div class="search-wrap">
-        <input type="text" id="searchInput" placeholder="SKU, Depo, MST veya ELS kodu girin..." autocomplete="off"
-          oninput="onSearch()" onkeydown="onKey(event)" />
-        <button class="clear-x" id="clearBtn" onclick="clearSearch()">✕</button>
+        <input class="search-inp" id="searchInp" placeholder="SKU veya Depo kodu girin..." autocomplete="off" oninput="aramaYap()" onkeydown="aramaKey(event)" />
+        <button class="search-x" id="searchX" onclick="aramaSil()">✕</button>
       </div>
-      <div class="suggestions" id="suggestions"></div>
-      <div id="resultArea">
-        <div class="empty-state">
-          <div class="empty-icon">🔎</div>
-          <div class="empty-text">SKU kodu girerek malzeme bilgisine ulaşın</div>
-        </div>
+      <div id="sugg" class="sugg"></div>
+      <div id="detayArea">
+        <div class="empty"><div class="empty-icon">🔎</div><div class="empty-txt">SKU veya Depo kodu ile arayın</div></div>
       </div>
     </div>
 
     <!-- GİRİŞ / ÇIKIŞ -->
-    <div class="tab-panel" id="tab-hareket">
-      <div class="form-card">
-        <h3>Stok Hareketi</h3>
-
-        <div class="form-group">
-          <label>SKU Kodu</label>
-          <input type="text" id="hareketSku" placeholder="SKU, Depo, MST veya ELS kodu..." autocomplete="off"
-            oninput="skuAra()" />
-        </div>
-        <div id="hareketSkuInfo" style="display:none;font-size:0.82rem;color:var(--muted);margin:-8px 0 12px;padding:0 4px;font-style:italic;"></div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Miktar</label>
-            <input type="number" id="hareketMiktar" placeholder="0" min="1" />
+    <div class="panel" id="p-hareket">
+      <!-- Tekli işlem -->
+      <div class="card">
+        <div class="card-head">Stok Hareketi</div>
+        <div style="padding:14px">
+          <div class="fgrp">
+            <label class="lbl">SKU / Depo Kodu</label>
+            <input class="inp" id="hSku" placeholder="Kod girin..." autocomplete="off" oninput="hSkuAra()" style="margin-bottom:0" />
+            <div class="sku-info" id="hSkuInfo"></div>
           </div>
-          <div class="form-group">
-            <label>İşlem Türü</label>
-            <select id="islemTuru" onchange="islemTuruDegis()">
-              <option value="giris_tedarikciden">📥 Girişi: Tedarikçiden</option>
-              <option value="giris_iade">📥 Giriş: İade / Sayım Düzeltme</option>
-              <option value="cikis_uretim">📤 Çıkış: Üretime</option>
-              <option value="cikis_uretim_disi">📤 Çıkış: Üretim Dışı</option>
-              <option value="cikis_fire">📤 Çıkış: Fire / Hasar</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- GİRİŞ ALANLARI -->
-        <div id="girisAlanlari">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Tedarikçi</label>
-              <input type="text" id="girisTedarikci" placeholder="Tedarikçi adı..." />
+          <div class="frow">
+            <div class="fgrp">
+              <label class="lbl">Miktar</label>
+              <input class="inp" id="hMiktar" type="number" placeholder="0" min="1" style="margin-bottom:0" />
             </div>
-            <div class="form-group">
-              <label>İrsaliye / Fatura No</label>
-              <input type="text" id="girisBelge" placeholder="İrsaliye no..." />
+            <div class="fgrp">
+              <label class="lbl">İşlem Türü</label>
+              <select class="inp" id="hTur" onchange="hTurDegis()" style="margin-bottom:0">
+                <option value="g_tedarikciden">📥 Giriş: Tedarikçiden</option>
+                <option value="g_iade">📥 Giriş: İade / Düzeltme</option>
+                <option value="c_uretim">📤 Çıkış: Üretime</option>
+                <option value="c_uretim_disi">📤 Çıkış: Üretim Dışı</option>
+                <option value="c_fire">📤 Çıkış: Fire / Hasar</option>
+              </select>
             </div>
           </div>
-        </div>
-
-        <!-- ÇIKIŞ ALANLARI -->
-        <div id="cikisAlanlari" style="display:none">
-          <div id="uretimAlani">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Üretim Emri / İş Emri No</label>
-                <input type="text" id="uretimNo" placeholder="Ör: UE-2024-001" />
+          <!-- Giriş alanları -->
+          <div id="girisAlanlar">
+            <div class="frow">
+              <div class="fgrp">
+                <label class="lbl">Tedarikçi</label>
+                <input class="inp" id="hTedarikci" placeholder="Tedarikçi adı..." style="margin-bottom:0" />
               </div>
-              <div class="form-group">
-                <label>Ürün / Proje Adı</label>
-                <input type="text" id="uretimAdi" placeholder="Ör: R2AT 1/2 Hortum" />
+              <div class="fgrp">
+                <label class="lbl">İrsaliye / Fatura No</label>
+                <input class="inp" id="hBelge" placeholder="İrsaliye no..." style="margin-bottom:0" />
               </div>
             </div>
           </div>
-          <div id="uretimDisiAlani" style="display:none">
-            <div class="form-group">
-              <label>Çıkış Sebebi</label>
-              <input type="text" id="cikisSebebi" placeholder="Ör: Bakım, Numune, Sayım düzeltme..." />
+          <!-- Çıkış alanları -->
+          <div id="cikisAlanlar" style="display:none">
+            <div id="uretimAlan">
+              <div class="frow">
+                <div class="fgrp">
+                  <label class="lbl">İş Emri / Üretim No</label>
+                  <input class="inp" id="hUretimNo" placeholder="UE-2026-001" style="margin-bottom:0" />
+                </div>
+                <div class="fgrp">
+                  <label class="lbl">Ürün Adı</label>
+                  <input class="inp" id="hUrunAdi" placeholder="Ürün adı..." style="margin-bottom:0" />
+                </div>
+              </div>
+            </div>
+            <div id="disiAlan" style="display:none">
+              <div class="fgrp">
+                <label class="lbl">Sebep</label>
+                <input class="inp" id="hSebep" placeholder="Bakım, numune, fire..." style="margin-bottom:0" />
+              </div>
             </div>
           </div>
+          <div class="fgrp" style="margin-top:12px">
+            <label class="lbl">Not (opsiyonel)</label>
+            <input class="inp" id="hNot" placeholder="Ek açıklama..." style="margin-bottom:0" />
+          </div>
+          <button class="btn-giris" id="btnGiris" onclick="stokGiris()" disabled>+ Stok Girişi</button>
+          <button class="btn-cikis" id="btnCikis" onclick="stokCikis()" disabled style="display:none">− Stok Çıkışı</button>
         </div>
-
-        <div class="form-group">
-          <label>Not (opsiyonel)</label>
-          <input type="text" id="hareketNot" placeholder="Ek açıklama..." />
-        </div>
-
-        <button class="btn-giris" id="btnGiris" onclick="stokGiris()" disabled>+ Stok Girişi</button>
-        <button class="btn-cikis" id="btnCikis" onclick="stokCikis()" disabled style="display:none">− Stok Çıkışı</button>
       </div>
 
-      <!-- Toplu Excel İşlemleri -->
-      <div class="form-card">
-        <h3>Toplu Stok İşlemi (Excel / CSV)</h3>
-
-        <!-- İşlem tipi seçimi -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-          <button id="tabGirisBtn" class="toplu-tab active-tab" onclick="setTopluTip('giris')">📥 Toplu Giriş</button>
-          <button id="tabCikisBtn" class="toplu-tab" onclick="setTopluTip('cikis')">📤 Toplu Çıkış</button>
-        </div>
-
-        <label for="fileInput" class="upload-area" style="display:block;cursor:pointer">
-          <div class="upload-icon">📄</div>
-          <div class="upload-text">Buraya tıkla — Excel veya CSV seç<br><small>(.xlsx, .xls veya .csv) · Sütunlar: SKU_Kodu, Miktar</small></div>
-        </label>
-        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFile(event)" style="display:none" />
-        <div id="excelPreview"></div>
-        <div id="btnTopluArea" style="display:none">
-          <button class="btn-giris" id="btnTopluGiris" onclick="topluIslem('giris')" style="display:none">📥 Toplu Girişi Uygula</button>
-          <button class="btn-cikis" id="btnTopluCikis" onclick="topluIslem('cikis')">📤 Toplu Çıkışı Uygula</button>
+      <!-- Toplu işlem -->
+      <div class="card">
+        <div class="card-head">Toplu Stok İşlemi (Excel)</div>
+        <div style="padding:14px">
+          <div class="toplu-tabs">
+            <button class="toplu-btn on" id="tGirisBtn" onclick="topluTipSec('giris')">📥 Toplu Giriş</button>
+            <button class="toplu-btn" id="tCikisBtn" onclick="topluTipSec('cikis')">📤 Toplu Çıkış</button>
+          </div>
+          <label for="fileInput" class="upload-area">
+            <div class="upload-icon">📄</div>
+            <div class="upload-txt">Buraya tıkla — Excel veya CSV seç<br><small>Sütunlar: SKU_Kodu, Miktar (+ Tedarikci, Irsaliye_No, Uretim_No vb.)</small></div>
+          </label>
+          <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="dosyaYukle(event)" />
+          <div id="onizleme"></div>
+          <button class="btn-toplu-giris" id="btnTopluGiris" onclick="topluUygula('giris')">📥 Toplu Girişi Uygula</button>
+          <button class="btn-toplu-cikis" id="btnTopluCikis" onclick="topluUygula('cikis')">📤 Toplu Çıkışı Uygula</button>
         </div>
       </div>
     </div>
 
     <!-- UYARILAR -->
-    <div class="tab-panel" id="tab-uyarilar">
-      <!-- Rapor butonu -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-        <button onclick="raporIndir('tumliste')" style="padding:12px;font-size:0.82rem;font-family:var(--font);background:var(--accent);color:#fff;border:none;border-radius:10px;cursor:pointer">
-          📥 Tüm Stok Listesi
-        </button>
-        <button onclick="raporIndir('kritik')" style="padding:12px;font-size:0.82rem;font-family:var(--font);background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger);border-radius:10px;cursor:pointer">
-          ⚠️ Sipariş Listesi
-        </button>
+    <div class="panel" id="p-uyarilar">
+      <div class="rapor-btns">
+        <button class="btn-rapor-all" onclick="raporIndir('hepsi')">📥 Tüm Stok Listesi</button>
+        <button class="btn-rapor-crit" onclick="raporIndir('siparis')">⚠️ Sipariş Listesi</button>
       </div>
-      <div id="uyariArea">
-        <div class="loading">Yükleniyor...</div>
-      </div>
+      <div id="ozetArea"></div>
+      <div id="uyariListesi"></div>
     </div>
 
   </div>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
-// ── AYARLAR ──
-const API_URL = 'https://script.google.com/macros/s/AKfycbycpVfNGhJFeamAFYQ1UMmwRn_LFpLKCc4LgMSWEGsslMLHD3TyxJoGVmvOtDEfFccWrw/exec';
-
-// ── VERİ (Google Sheets'ten yüklenir, bu fallback) ──
-const LOCAL_DATA = [{"sku": "5251741308610000", "aciklama": "Başlık, 1\", 28l, M36x2, Din 3865-Dkol  45 (1201390)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 44, "raf": "A", "mevcut_stok": 111, "minimum_stok": 50}, {"sku": "5251741308600000", "aciklama": "Başlık, 3/4\", 25s, M36x2, Din 3865-Dkos  45 (1200765)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 20, "raf": "A", "mevcut_stok": 631, "minimum_stok": 50}, {"sku": "5251741308580000", "aciklama": "Başlık, 5/8\", 20s, M30x2, Din 3865-Dkos  45 (1201300)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 22, "raf": "A", "mevcut_stok": 1147, "minimum_stok": 50}, {"sku": "5251741308560000", "aciklama": "Başlık, 1/2\", 16s, M24x1.5, Din 3865-Dkos  45 (1200712)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 24, "raf": "A", "mevcut_stok": 1054, "minimum_stok": 50}, {"sku": "5251741308550000", "aciklama": "Başlık, 3/8\", 12l, M18x1.5, Din 3865-Dkol  45 (1200671)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 23, "raf": "A", "mevcut_stok": 1203, "minimum_stok": 50}, {"sku": "5251741308530000", "aciklama": "Başlık, 5/16\", 10l, M16x1.5, Din 3865-Dkol  45 (1200645)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 20, "raf": "A", "mevcut_stok": 1008, "minimum_stok": 50}, {"sku": "5251741308520000", "aciklama": "Başlık, 1/4\", 10l, M16x1.5, Din 3865-Dkol  45 (1201576)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 41, "raf": "A", "mevcut_stok": 581, "minimum_stok": 50}, {"sku": "5251741308510000", "aciklama": "Başlık, 1\", 28l, M36x2, Din 3865-Dkol 90 (1201391)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 40, "raf": "A", "mevcut_stok": 1136, "minimum_stok": 50}, {"sku": "5251741308500000", "aciklama": "Başlık, 3/4\", 25s, M36x2, Din 3865-Dkos 90 (1200768)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 24, "raf": "A", "mevcut_stok": 463, "minimum_stok": 50}, {"sku": "5251741308490000", "aciklama": "Başlık, 3/4\", 20s, M30x2, Din 3865-Dkos 90 (1200766)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 26, "raf": "A", "mevcut_stok": 824, "minimum_stok": 50}, {"sku": "5251741308480000", "aciklama": "Başlık, 5/8\", 20s, M30x2, Din 3865-Dkos 90 (1200741)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 23, "raf": "A", "mevcut_stok": 1290, "minimum_stok": 50}, {"sku": "5251741308470000", "aciklama": "Başlık, 5/8\", 16s, M24x1,5, Din 3865-Dkos 90 (1240088)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 37, "raf": "A", "mevcut_stok": 380, "minimum_stok": 50}, {"sku": "5251741308460000", "aciklama": "Başlık, 1/2\", 16s, M24x1,5, Din 3865-Dkos 90 (1200714)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 34, "raf": "A", "mevcut_stok": 732, "minimum_stok": 50}, {"sku": "5251741308450000", "aciklama": "Başlık, 3/8\", 12s, M20x1,5, Din 3865-Dkos 90 (1200677)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 32, "raf": "A", "mevcut_stok": 414, "minimum_stok": 50}, {"sku": "5251741308440000", "aciklama": "Başlık, 3/8\", 12l, M18x1.5, Din 3865-Dkol 90 (1200676)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 33, "raf": "A", "mevcut_stok": 848, "minimum_stok": 50}, {"sku": "5251741308430000", "aciklama": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos 90 (1216700)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 22, "raf": "A", "mevcut_stok": 299, "minimum_stok": 50}, {"sku": "5251741308420000", "aciklama": "Başlık, 5/16\", 10l, M16x1.5, Din 3865-Dkol 90 (1200648)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 39, "raf": "A", "mevcut_stok": 356, "minimum_stok": 50}, {"sku": "5251741308410000", "aciklama": "Başlık, 1/4\", 10l, M16x1.5, Din 3865-Dkol  90 (1200616)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 37, "raf": "A", "mevcut_stok": 788, "minimum_stok": 50}, {"sku": "5251741308400000", "aciklama": "Başlık, 3/4\", 25s, M36x2, Din 3865-Dkos (1216696)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 45, "raf": "A", "mevcut_stok": 819, "minimum_stok": 50}, {"sku": "5251741308390000", "aciklama": "Başlık, 3/4\", 20s, M30x2, Din 3865-Dkos (1201732)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 31, "raf": "A", "mevcut_stok": 348, "minimum_stok": 50}, {"sku": "5251741308380000", "aciklama": "Başlık, 5/8\", 20s, M30x2, Din 3865-Dkos (1200737)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 31, "raf": "A", "mevcut_stok": 1042, "minimum_stok": 50}, {"sku": "5251741308370000", "aciklama": "Başlık, 1/2\", 16s, M24x1,5, Düz, Din 3865-Dkos (1200708)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 36, "raf": "A", "mevcut_stok": 160, "minimum_stok": 50}, {"sku": "5251741308360000", "aciklama": "Başlık, 3/8\", 12s, M20x1,5, Din 3865-Dkos (1200668)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 39, "raf": "B", "mevcut_stok": 598, "minimum_stok": 50}, {"sku": "5251741308350000", "aciklama": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos (1201832)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 23, "raf": "B", "mevcut_stok": 1118, "minimum_stok": 50}, {"sku": "5251741308340000", "aciklama": "Başlık, 1\", 28l, M36x2, Din 3865-Dkol (1201385)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 32, "raf": "B", "mevcut_stok": 1198, "minimum_stok": 50}, {"sku": "5251741308330000", "aciklama": "Başlık, 3/8\", 12l, M18x1,5, Din 3865-Dkol (1200667)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 30, "raf": "B", "mevcut_stok": 1062, "minimum_stok": 50}, {"sku": "5251741308320000", "aciklama": "Başlık, 5/16\", 10l, M16x1,5, Din 3865-Dkol (1200642)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 34, "raf": "B", "mevcut_stok": 1117, "minimum_stok": 50}, {"sku": "5251741308310000", "aciklama": "Başlık, 1/4\", 10l, M16x1,5, Din 3865-Dkol (1200609)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 30, "raf": "B", "mevcut_stok": 540, "minimum_stok": 50}, {"sku": "5251741308270000", "aciklama": "BASLIK,1 22L,M30X2,DUZ,H1221512-1630000", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 35, "raf": "B", "mevcut_stok": 1157, "minimum_stok": 50}, {"sku": "5251721078310000", "aciklama": "HOSE, OIL SUCTION, (ALFAGOMMA 634AA)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "HORTUM", "olcu_birimi": "M", "birim_agirlik": 41, "raf": "B", "mevcut_stok": 378, "minimum_stok": 50}, {"sku": "5251721073080000", "aciklama": "HOSE, THERMOPLASTIC (FLEXOR TWB1  1/4\")", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "HORTUM", "olcu_birimi": "M", "birim_agirlik": 24, "raf": "B", "mevcut_stok": 649, "minimum_stok": 50}, {"sku": "5251721072660000", "aciklama": "Hortum, 1/2\", 1sc", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "HORTUM", "olcu_birimi": "M", "birim_agirlik": 34, "raf": "B", "mevcut_stok": 1314, "minimum_stok": 50}, {"sku": "5251721072650000", "aciklama": "Hortum, 3/8\", 1sc, (Dunlop 121t Superslimline Plus-1SC )", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "HORTUM", "olcu_birimi": "M", "birim_agirlik": 20, "raf": "B", "mevcut_stok": 134, "minimum_stok": 50}, {"sku": "5251721072640000", "aciklama": "Hortum, 1sc 5/16\", Dunlop 121t", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "HORTUM", "olcu_birimi": "M", "birim_agirlik": 21, "raf": "B", "mevcut_stok": 632, "minimum_stok": 50}, {"sku": "5251721072630000", "aciklama": "HOSE, 1\",1SC, (DUNLOP 121T SLIMELINE PLUS - 1SC)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "HORTUM", "olcu_birimi": "M", "birim_agirlik": 37, "raf": "B", "mevcut_stok": 574, "minimum_stok": 50}, {"sku": "5251721072620000", "aciklama": "HOSE, 3/4\",1SC, (DUNLOP 121T SLIMELINE PLUS - 1SC)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "HORTUM", "olcu_birimi": "M", "birim_agirlik": 40, "raf": "B", "mevcut_stok": 1170, "minimum_stok": 50}, {"sku": "5251721072610000", "aciklama": "HOSE, 5/8\",1SC, (DUNLOP 121T SLIMELINE PLUS - 1SC)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "HORTUM", "olcu_birimi": "M", "birim_agirlik": 21, "raf": "B", "mevcut_stok": 1325, "minimum_stok": 50}, {"sku": "5251721072600000", "aciklama": "Hortum, 1/2\", 2sc, (Dunlop 241t Superslimline Hi-Tuff)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "HORTUM", "olcu_birimi": "M", "birim_agirlik": 20, "raf": "B", "mevcut_stok": 1079, "minimum_stok": 50}, {"sku": "5251721072590000", "aciklama": "HOSE, 3/8\", 2SC, (DUNLOP 241T SUPERSLIMLINE HI-TUFF)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "HORTUM", "olcu_birimi": "M", "birim_agirlik": 42, "raf": "B", "mevcut_stok": 530, "minimum_stok": 50}, {"sku": "5251721072580000", "aciklama": "Hortum, 5/16, 2sc, (Dunlop 241t Superslimline Hi-Tuff)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "HORTUM", "olcu_birimi": "M", "birim_agirlik": 22, "raf": "B", "mevcut_stok": 661, "minimum_stok": 50}, {"sku": "5251721072570000", "aciklama": "Hortum, 1/4\", 2sc, (Dunlop 241t Superslimline Hi-Tuff)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "HORTUM", "olcu_birimi": "M", "birim_agirlik": 45, "raf": "C", "mevcut_stok": 268, "minimum_stok": 50}, {"sku": "5251721072560000", "aciklama": "Hortum, 5/8\",2sc, (Dunlop 241t Superslimline Hi-Tuff)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "HORTUM", "olcu_birimi": "M", "birim_agirlik": 25, "raf": "C", "mevcut_stok": 1118, "minimum_stok": 50}, {"sku": "5251721072550000", "aciklama": "Hortum, 3/4\", 2sc, (Dunlop 241t Superslimline Hi-Tuff)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "HORTUM", "olcu_birimi": "M", "birim_agirlik": 29, "raf": "C", "mevcut_stok": 1342, "minimum_stok": 50}, {"sku": "5251721072400000", "aciklama": "Hortum Kilifi, Polietilen, 5/16\", 13x16 (10011081000130)", "tedarikci1": "Hidrotek", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Hortum KILIFI", "olcu_birimi": "M", "birim_agirlik": 29, "raf": "C", "mevcut_stok": 1202, "minimum_stok": 50}, {"sku": "5251721072390000", "aciklama": "Hortum Kilifi, Polietilen, 3/8\", 16x20 (10011081000160)", "tedarikci1": "Hidrotek", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Hortum KILIFI", "olcu_birimi": "M", "birim_agirlik": 34, "raf": "C", "mevcut_stok": 976, "minimum_stok": 50}, {"sku": "5251721072380000", "aciklama": "Hortum Kilifi, Polietilen, 1/2\", 20x25 (10011081000200)", "tedarikci1": "Hidrotek", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Hortum KILIFI", "olcu_birimi": "M", "birim_agirlik": 45, "raf": "C", "mevcut_stok": 831, "minimum_stok": 50}, {"sku": "5251721072370000", "aciklama": "Hortum Kilifi, Polietilen, 5/8\", 24x29 (10011081000240)", "tedarikci1": "Hidrotek", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Hortum KILIFI", "olcu_birimi": "M", "birim_agirlik": 35, "raf": "C", "mevcut_stok": 1093, "minimum_stok": 50}, {"sku": "5251721072360000", "aciklama": "Hortum Kilifi, Polietilen, 3/4\", 27x32 (10011081000270)", "tedarikci1": "Hidrotek", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Hortum KILIFI", "olcu_birimi": "M", "birim_agirlik": 33, "raf": "C", "mevcut_stok": 687, "minimum_stok": 50}, {"sku": "5251741301700000", "aciklama": "Özel Başlık,Duz Drop 65 Su 5427045 Bhl", "tedarikci1": "Kazcıoğlu", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "ÖZEL BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 32, "raf": "C", "mevcut_stok": 562, "minimum_stok": 50}, {"sku": "5251741301670000", "aciklama": "Özel Başlık,U-Bukum-90-Başlık Bhl", "tedarikci1": "Kazcıoğlu", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "ÖZEL BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 44, "raf": "C", "mevcut_stok": 465, "minimum_stok": 50}, {"sku": "5251741301181000", "aciklama": "RK-1616-MSOD-S", "tedarikci1": "Omar-Rekorsan", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 37, "raf": "C", "mevcut_stok": 907, "minimum_stok": 50}, {"sku": "5251741301170000", "aciklama": "RK-1616-MSO45-S", "tedarikci1": "Omar-Rekorsan", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 32, "raf": "C", "mevcut_stok": 1298, "minimum_stok": 50}, {"sku": "5251741060130000", "aciklama": "Başlık, 2 Bukumlu 22x3 Bhl", "tedarikci1": "Kazcıoğlu", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "ÖZEL BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 38, "raf": "C", "mevcut_stok": 302, "minimum_stok": 50}, {"sku": "5251721061790000", "aciklama": "Başlık, 2 Bukumlu U Ozel Bhl", "tedarikci1": "Kazcıoğlu", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "ÖZEL BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 21, "raf": "C", "mevcut_stok": 630, "minimum_stok": 50}, {"sku": "5251741308230000", "aciklama": "Soket, 1/4\", H1200tp0,  (1232358)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "SOKET", "olcu_birimi": "AD", "birim_agirlik": 39, "raf": "C", "mevcut_stok": 934, "minimum_stok": 50}, {"sku": "5251741308160000", "aciklama": "Soket, 1/2\", H1200ad1, (1227981)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "SOKET", "olcu_birimi": "AD", "birim_agirlik": 40, "raf": "C", "mevcut_stok": 1013, "minimum_stok": 50}, {"sku": "5251741308150000", "aciklama": "Soket, 3/8\", H1200ad1, (1227980)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "SOKET", "olcu_birimi": "AD", "birim_agirlik": 30, "raf": "C", "mevcut_stok": 445, "minimum_stok": 50}, {"sku": "5251741308140000", "aciklama": "Soket, 5/16\", H1200ad1, (1227979)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "SOKET", "olcu_birimi": "AD", "birim_agirlik": 31, "raf": "C", "mevcut_stok": 69, "minimum_stok": 50}, {"sku": "5251741308130000", "aciklama": "Soket, 1/4\", H1200ad1, (1227978)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "SOKET", "olcu_birimi": "AD", "birim_agirlik": 34, "raf": "C", "mevcut_stok": 90, "minimum_stok": 50}, {"sku": "5251741308120000", "aciklama": "Soket, 5/8\", H1200ad1, (1227983)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "SOKET", "olcu_birimi": "AD", "birim_agirlik": 23, "raf": "D", "mevcut_stok": 1121, "minimum_stok": 50}, {"sku": "5251741308110000", "aciklama": "Soket, 3/4\", H1200ad1, (1227985)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "SOKET", "olcu_birimi": "AD", "birim_agirlik": 23, "raf": "D", "mevcut_stok": 204, "minimum_stok": 50}, {"sku": "5251741309460000", "aciklama": "FERRULE, 3/4, H1200AD2-12, (1227996)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "SOKET", "olcu_birimi": "AD", "birim_agirlik": 21, "raf": "D", "mevcut_stok": 560, "minimum_stok": 50}, {"sku": "5251741308100000", "aciklama": "FERRULE, 1\", H1200AD1, (1227986)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "SOKET", "olcu_birimi": "AD", "birim_agirlik": 22, "raf": "D", "mevcut_stok": 177, "minimum_stok": 50}, {"sku": "5251721073070000", "aciklama": "HORTUM KILIFI - 1900148 - HHP-TXSL L PES DN 85 0.8 BLK", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "TEKSTİL KILIF", "olcu_birimi": "M", "birim_agirlik": 31, "raf": "D", "mevcut_stok": 966, "minimum_stok": 50}, {"sku": "5251721073060000", "aciklama": "HORTUM KILIFI - 1900167 HHP-TXSL L PES DN 65 0.8 BLK", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "TEKSTİL KILIF", "olcu_birimi": "M", "birim_agirlik": 40, "raf": "D", "mevcut_stok": 1177, "minimum_stok": 50}, {"sku": "5251721073000000", "aciklama": "Yay Spiral, 3/8\", Boy:250mm (2mm Tel, Ic Cap 19,5mm, Dis Cap 23,5mm)", "tedarikci1": "Eray Başel", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Yay", "olcu_birimi": "AD", "birim_agirlik": 28, "raf": "D", "mevcut_stok": 1320, "minimum_stok": 50}, {"sku": "5251741301111110", "aciklama": "Başlık, 1/4, 8l, M14x1,5,Düz,1200614", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Başlık", "olcu_birimi": "AD", "birim_agirlik": 43, "raf": "D", "mevcut_stok": 1168, "minimum_stok": 50}, {"sku": "5251741301111120", "aciklama": "Başlık, 1/4, 8l, M14x1,5, 45,1200612", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Başlık", "olcu_birimi": "AD", "birim_agirlik": 41, "raf": "D", "mevcut_stok": 466, "minimum_stok": 50}, {"sku": "5251741301111130", "aciklama": "Başlık, 1/4, 8l, M14x1,5, 90,1200618", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Başlık", "olcu_birimi": "AD", "birim_agirlik": 40, "raf": "D", "mevcut_stok": 515, "minimum_stok": 50}, {"sku": "525TCHNC59600000", "aciklama": "HOSE, 1/4\",141t, (DUNLOP 141T SUPERSLIMELINE)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Hortum", "olcu_birimi": "M", "birim_agirlik": 41, "raf": "D", "mevcut_stok": 1287, "minimum_stok": 50}, {"sku": "525TCHNC59700000", "aciklama": "HOSE, 3/8\",141t, (DUNLOP 141T SUPERSLIMELINE)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Hortum", "olcu_birimi": "M", "birim_agirlik": 20, "raf": "D", "mevcut_stok": 756, "minimum_stok": 50}, {"sku": "5251721078320000", "aciklama": "HOSE, 1/4, 1sc, Dunlop", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Hortum", "olcu_birimi": "M", "birim_agirlik": 38, "raf": "D", "mevcut_stok": 371, "minimum_stok": 50}, {"sku": "551TCHNC60100000", "aciklama": "Başlık, 3/16\", 8l, M14x1,5, Düz, Din 3865-Dkos (H1221513-031400)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 40, "raf": "D", "mevcut_stok": 1128, "minimum_stok": 50}, {"sku": "551TCHNC60000000", "aciklama": "FERRULE, 3/16\", H1200AD1, (1227977)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "SOKET", "olcu_birimi": "AD", "birim_agirlik": 27, "raf": "D", "mevcut_stok": 222, "minimum_stok": 50}, {"sku": "525TCHNC59900000", "aciklama": "HOSE, 3/16\",1SN, (DUNLOP 122T PLUS-1S2/R1AT)", "tedarikci1": "Ateş İnşaat", "tedarikci2": "", "depo_kodu1": "", "depo_kodu2": "", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Hortum", "olcu_birimi": "M", "birim_agirlik": 38, "raf": "W", "mevcut_stok": 408, "minimum_stok": 50}, {"sku": "5251741308970000", "aciklama": "RK-0610-RSD", "tedarikci1": "Omar", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "RK-0610-RSD", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 32, "raf": "W", "mevcut_stok": 1297, "minimum_stok": 50}, {"sku": "5251741308960000", "aciklama": "RK-0610-RE", "tedarikci1": "Omar", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "RK-0610-RE", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "BAŞLIK", "olcu_birimi": "AD", "birim_agirlik": 38, "raf": "W", "mevcut_stok": 342, "minimum_stok": 50}, {"sku": "5251741308990000", "aciklama": "RK-1010-MSOD-S", "tedarikci1": "Omar", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "RK-1010-MSOD-S", "mst1": "", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Başlık", "olcu_birimi": "AD", "birim_agirlik": 40, "raf": "W", "mevcut_stok": 1094, "minimum_stok": 50}, {"sku": "T5-001", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA10RLWZN", "depo_kodu2": "RK-1310-RMNP-L", "mst1": "551GF10LRFDOMD00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 38, "raf": "T5-001", "mevcut_stok": 417, "minimum_stok": 50}, {"sku": "T5-002", "aciklama": "METRİK TERS DİRSEKLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVBD10LZN", "depo_kodu2": "RK-1010-MTD-L", "mst1": "551FW10LOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 35, "raf": "T5-002", "mevcut_stok": 568, "minimum_stok": 50}, {"sku": "T5-003", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA16SR34WZN", "depo_kodu2": "RK-2616-RMNP-S", "mst1": "551GF16SR34FD000", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 37, "raf": "T5-003", "mevcut_stok": 377, "minimum_stok": 50}, {"sku": "T5-004", "aciklama": "METRİK TERS DİRSEKLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVBD12LZN", "depo_kodu2": "RK-1212-MTD-L", "mst1": "551FW12LOMDA3C00", "mst2": "", "els1": "551FW12LO7100000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 34, "raf": "T5-004", "mevcut_stok": 1095, "minimum_stok": 50}, {"sku": "T5-005", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA12RLWZN", "depo_kodu2": "RK-1712-RMNP-L", "mst1": "551GF12LRFDOMD00", "mst2": "", "els1": "551GF12LRF000000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 20, "raf": "T5-005", "mevcut_stok": 83, "minimum_stok": 50}, {"sku": "T5-006", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA10SR14WZN", "depo_kodu2": "RK-1310-RMNP-S", "mst1": "551GF10SR14F0000", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 29, "raf": "T5-006", "mevcut_stok": 103, "minimum_stok": 50}, {"sku": "T5-007", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA20RSWZN", "depo_kodu2": "RK-2620-RMNP-S", "mst1": "551GF20SRFDOMD00", "mst2": "", "els1": "551GF20SRF000000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 38, "raf": "T5-007", "mevcut_stok": 1175, "minimum_stok": 50}, {"sku": "T5-008", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA12LR14WZN", "depo_kodu2": "RK-1312-RMNP-L", "mst1": "551GF12LR14FD000", "mst2": "", "els1": "551GF12LR14F0000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 32, "raf": "T5-008", "mevcut_stok": 63, "minimum_stok": 50}, {"sku": "T5-009", "aciklama": "BSP METRİK 90° KONTRALI DİRSEK", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XBE10L91618UZ", "depo_kodu2": "", "mst1": "551WFF10L916U000", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 38, "raf": "T5-009", "mevcut_stok": 238, "minimum_stok": 50}, {"sku": "T5-010", "aciklama": "METRİK YANBACAK TE", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVDD12LZN", "depo_kodu2": "RK-1212-MYT-L", "mst1": "551FL12LOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 32, "raf": "T5-010", "mevcut_stok": 1129, "minimum_stok": 50}, {"sku": "T5-011", "aciklama": "METRİK TERS DİRSEKLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVBD10SZN", "depo_kodu2": "RK-1010-MTD-S", "mst1": "551FW10SOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 42, "raf": "T5-011", "mevcut_stok": 295, "minimum_stok": 50}, {"sku": "T5-012", "aciklama": "METRİK YANBACAK TE", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVDD10LZN", "depo_kodu2": "RK-1010-MYT-L", "mst1": "551FL10LOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 27, "raf": "T5-012", "mevcut_stok": 867, "minimum_stok": 50}, {"sku": "T5-013", "aciklama": "METRİK TERS DİRSEKLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVBD16SZN", "depo_kodu2": "RK-1616-MTD-S", "mst1": "551FW16SOMDA3C00", "mst2": "", "els1": "551FW16SOMDCF000", "els2": "551FW16LO0000000", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 35, "raf": "T5-013", "mevcut_stok": 1203, "minimum_stok": 50}, {"sku": "T5-014", "aciklama": "BSP PFX ALYANBAŞLI KÖRTAPA", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "VSCHR34WZN", "depo_kodu2": "RK-2614-RAT", "mst1": "551VSTI34FDA3C00", "mst2": "", "els1": "551VSTI34FD00000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 31, "raf": "T5-014", "mevcut_stok": 285, "minimum_stok": 50}, {"sku": "T5-015", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA12RSWZN", "depo_kodu2": "RK-1712-RMNP-S", "mst1": "551GF12SRFDOM000", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 42, "raf": "T5-015", "mevcut_stok": 1016, "minimum_stok": 50}, {"sku": "T5-016", "aciklama": "METRİK TERS DİRSEKLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVBD20SZN", "depo_kodu2": "RK-2020-MTD-S", "mst1": "551FW20SOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 32, "raf": "T5-016", "mevcut_stok": 1210, "minimum_stok": 50}, {"sku": "T5-017", "aciklama": "METRİK YANBACAK TE", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVDD16SZN", "depo_kodu2": "RK-1616-MYT-S", "mst1": "551FL16SOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 41, "raf": "T5-017", "mevcut_stok": 1166, "minimum_stok": 50}, {"sku": "T5-018", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA16RSWZN", "depo_kodu2": "RK-2116-RMNP-S", "mst1": "551GF16SRFDOMD00", "mst2": "", "els1": "551GF16SRF000000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 23, "raf": "T5-018", "mevcut_stok": 227, "minimum_stok": 50}, {"sku": "T5-019", "aciklama": "METRİK YANBACAK TE", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVDD10SZN", "depo_kodu2": "RK-1010-MYT-S", "mst1": "551FL10SOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 39, "raf": "T5-019", "mevcut_stok": 625, "minimum_stok": 50}, {"sku": "T5-020", "aciklama": "METRİK YANBACAK TE", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVDD28LZN", "depo_kodu2": "RK-2828-MYT-L", "mst1": "551FL28LOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 20, "raf": "T5-020", "mevcut_stok": 196, "minimum_stok": 50}, {"sku": "T5-021", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA8RLWZN", "depo_kodu2": "RK-1308-RMNP-L", "mst1": "551X221181230000", "mst2": "", "els1": "551GF08LRF000000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 20, "raf": "T5-021", "mevcut_stok": 1053, "minimum_stok": 50}, {"sku": "T5-022", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA25SR34WZN", "depo_kodu2": "RK-2625-RMNP-S", "mst1": "551GF25SR314F000", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 37, "raf": "T5-022", "mevcut_stok": 608, "minimum_stok": 50}, {"sku": "T5-023", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA28RLWZN", "depo_kodu2": "RK-3328-RMNP-L", "mst1": "551GF28LRFDOMD00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 20, "raf": "T5-023", "mevcut_stok": 1041, "minimum_stok": 50}, {"sku": "T5-024", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA10LR38WZN", "depo_kodu2": "RK-1710-RMNP-L", "mst1": "551GF10LR38FD000", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 20, "raf": "T5-024", "mevcut_stok": 534, "minimum_stok": 50}, {"sku": "T5-025", "aciklama": "BSP - METRİK PFX TERS RAKOR", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "VAD28MLWZN", "depo_kodu2": "RK-3328-RMTR-L", "mst1": "551FGF28LRFDA3C0", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 26, "raf": "T5-025", "mevcut_stok": 683, "minimum_stok": 50}, {"sku": "T5-026", "aciklama": "METRİK TERS DİRSEKLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVBD28LZN", "depo_kodu2": "RK-2828-MTD-L", "mst1": "551FW28LOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 20, "raf": "T5-026", "mevcut_stok": 1240, "minimum_stok": 50}, {"sku": "T5-027", "aciklama": "BSP PFX ALYANBAŞLI KÖRTAPA", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "VSCHR38WZN", "depo_kodu2": "RK-1719-RAT", "mst1": "551VSTI38FDA3C00", "mst2": "", "els1": "551VSTI38FD00000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 22, "raf": "T5-027", "mevcut_stok": 389, "minimum_stok": 50}, {"sku": "T5-028", "aciklama": "METRİK TERS DİRSEKLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVBD25SZN", "depo_kodu2": "RK-2525-MTD-S", "mst1": "551FW25SOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 33, "raf": "T5-028", "mevcut_stok": 894, "minimum_stok": 50}, {"sku": "T5-029", "aciklama": "METRİK TERS DİRSEKLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVBD12SZN", "depo_kodu2": "RK-1212-MTD-S", "mst1": "551FW12SOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 30, "raf": "T5-029", "mevcut_stok": 808, "minimum_stok": 50}, {"sku": "T5-030", "aciklama": "BSP - METRİK DÖNER DİRSEK", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XSBE10RLEDZN", "depo_kodu2": "RK-1310-RMDD-L", "mst1": "551WH10LRKDSOMD0", "mst2": "", "els1": "551GF10LRF000000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 37, "raf": "T5-030", "mevcut_stok": 453, "minimum_stok": 50}, {"sku": "T5-031", "aciklama": "METRİK YANBACAK TE", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVDD25SZN", "depo_kodu2": "RK-2525-MYT-S", "mst1": "551FL25SOMDA3000", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 29, "raf": "T5-031", "mevcut_stok": 586, "minimum_stok": 50}, {"sku": "T5-032", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA35RLWZN", "depo_kodu2": "RK-4235-RMNP-L", "mst1": "551GF35LRFDOMD00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 42, "raf": "T5-032", "mevcut_stok": 1086, "minimum_stok": 50}, {"sku": "T5-033", "aciklama": "BSP METRİK 90° KONTRALI DİRSEK", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XBE28RLOZN", "depo_kodu2": "RK-3328-RMKD-L", "mst1": "551WFF28LROMD000", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 36, "raf": "T5-033", "mevcut_stok": 391, "minimum_stok": 50}, {"sku": "T5-034", "aciklama": "BSP - METRİK DÖNER DİRSEK", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XSBE20RSEDZN", "depo_kodu2": "RK-2620-RMDD-S", "mst1": "551WH20SRKDSO000", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 42, "raf": "T5-034", "mevcut_stok": 943, "minimum_stok": 50}, {"sku": "T5-035", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA22RLWZN", "depo_kodu2": "RK-2622-RMNP-L", "mst1": "551GF22LRFDOMD00", "mst2": "551X221181310000", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 21, "raf": "T5-035", "mevcut_stok": 656, "minimum_stok": 50}, {"sku": "T5-036", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA16SR38WZN", "depo_kodu2": "RK-1716-RMNP-S", "mst1": "551GF16SR318FDO0", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 39, "raf": "T5-036", "mevcut_stok": 329, "minimum_stok": 50}, {"sku": "T5-037", "aciklama": "METRİK YANBACAK TE", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVDD12SZN", "depo_kodu2": "RK-1212-MYT-S", "mst1": "551FL12SOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 39, "raf": "T5-037", "mevcut_stok": 881, "minimum_stok": 50}, {"sku": "T5-038", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA12SR14WZN", "depo_kodu2": "RK-1312-RMNP-S", "mst1": "551GF12SR14FDO00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 26, "raf": "T5-038", "mevcut_stok": 595, "minimum_stok": 50}, {"sku": "T5-039", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA10LR18WZN", "depo_kodu2": "RK-1010-RMNP-L", "mst1": "551GF10LR18FD000", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 23, "raf": "T5-039", "mevcut_stok": 205, "minimum_stok": 50}, {"sku": "T5-040", "aciklama": "BSP METRİK 90° KONTRALI DİRSEK", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XBE16SR34OAZN", "depo_kodu2": "RK-2616-RMKD-S", "mst1": "551WFF16SR340000", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 26, "raf": "T5-040", "mevcut_stok": 463, "minimum_stok": 50}, {"sku": "T5-041", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA28LR34WZN", "depo_kodu2": "RK-2628-RMNP-L", "mst1": "551GF28LR34FDOM0", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 31, "raf": "T5-041", "mevcut_stok": 477, "minimum_stok": 50}, {"sku": "T5-042", "aciklama": "BSP - METRİK PFX TERS RAKOR", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "VAD35RLWZN", "depo_kodu2": "RK-4235-RMTR-L", "mst1": "551FGF35LRFDA3C0", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 26, "raf": "T5-042", "mevcut_stok": 438, "minimum_stok": 50}, {"sku": "T5-043", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA25RSWZN", "depo_kodu2": "RK-3325-RMNP-S", "mst1": "551GF25SRFDOM000", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 33, "raf": "T5-043", "mevcut_stok": 612, "minimum_stok": 50}, {"sku": "T5-044", "aciklama": "BSP - METRİK PFX TERS RAKOR", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "VAD12RLWZN", "depo_kodu2": "RK-1712-RMTR-L", "mst1": "551FGF12LRFDA3C0", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 42, "raf": "T5-044", "mevcut_stok": 1284, "minimum_stok": 50}, {"sku": "T5-045", "aciklama": "METRİK YANBACAK TE", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVDD20SZN", "depo_kodu2": "RK-2020-MYT-S", "mst1": "551FL20SOMD00000", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 41, "raf": "T5-045", "mevcut_stok": 1002, "minimum_stok": 50}, {"sku": "T5-046", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA22LR1WZN", "depo_kodu2": "RK-3322-RMNP-L", "mst1": "551GF22LR1FDOMD0", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 44, "raf": "T5-046", "mevcut_stok": 1241, "minimum_stok": 50}, {"sku": "T5-047", "aciklama": "METRİK TERS DİRSEKLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVBD35LZN", "depo_kodu2": "RK-3535-MTD-L", "mst1": "551FW35LOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 20, "raf": "T5-047", "mevcut_stok": 192, "minimum_stok": 50}, {"sku": "T5-048", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA10RSWZN", "depo_kodu2": "RK-1710-RMNP-S", "mst1": "551GF10SRFDOM000", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 26, "raf": "T5-048", "mevcut_stok": 474, "minimum_stok": 50}, {"sku": "T5-049", "aciklama": "METRİK TERS DİRSEKLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVBD30SZN", "depo_kodu2": "RK-3030-MTD-S", "mst1": "551FW30SOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 30, "raf": "T5-049", "mevcut_stok": 453, "minimum_stok": 50}, {"sku": "T5-050", "aciklama": "METRİK ORTABACAK TE", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVCD20SZN", "depo_kodu2": "RK-2020-MOT-S", "mst1": "551FT20SOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 40, "raf": "T5-050", "mevcut_stok": 1115, "minimum_stok": 50}, {"sku": "T5-051", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA35LR112WZN", "depo_kodu2": "RK-4835-RMNP-L", "mst1": "551GF35LR112FD00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 27, "raf": "T5-051", "mevcut_stok": 550, "minimum_stok": 50}, {"sku": "T5-052", "aciklama": "METRİK ORTABACAK TE", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVCD12SZN", "depo_kodu2": "RK-1212-MOT-S", "mst1": "551FT12SOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 28, "raf": "T5-052", "mevcut_stok": 1289, "minimum_stok": 50}, {"sku": "T5-053", "aciklama": "METRİK ORTABACAK TE", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVCD35LZN", "depo_kodu2": "RK-3535-MOT-L", "mst1": "551FT35LOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 31, "raf": "T5-053", "mevcut_stok": 1232, "minimum_stok": 50}, {"sku": "T5-054", "aciklama": "METRİK YANBACAK TE", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XVDD22LZN", "depo_kodu2": "RK-2222-MYT-L", "mst1": "551FL22LOMDA3C00", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 21, "raf": "T5-054", "mevcut_stok": 1315, "minimum_stok": 50}, {"sku": "T5-055", "aciklama": "BSP METRİK 90° KONTRALI DİRSEK", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XBE22RLOAZN", "depo_kodu2": "RK-2622-RMKD-L", "mst1": "551WFF22LROMD000", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 21, "raf": "T5-055", "mevcut_stok": 495, "minimum_stok": 50}, {"sku": "T5-056", "aciklama": "METRİK ARA NİPELLERİ", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XE8LZN", "depo_kodu2": "RK-0808-MMN-L", "mst1": "", "mst2": "", "els1": "5514310205000000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 32, "raf": "T5-056", "mevcut_stok": 1208, "minimum_stok": 50}, {"sku": "T5-057", "aciklama": "MANOMETRE TEST", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "CSHR14W", "depo_kodu2": "FER-RO-1/4\" MANOMETRE TEST REKORU", "mst1": "", "mst2": "", "els1": "551FMA314F000000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 28, "raf": "T5-057", "mevcut_stok": 828, "minimum_stok": 50}, {"sku": "T5-058", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA8LR38WZN", "depo_kodu2": "RK-1708-RMNP-L", "mst1": "", "mst2": "", "els1": "551GF08L38F00000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 42, "raf": "T5-058", "mevcut_stok": 690, "minimum_stok": 50}, {"sku": "T5-059", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA8L71620UZN", "depo_kodu2": "RK-1108-WMN-L", "mst1": "", "mst2": "", "els1": "551GF08L716UNF00", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 23, "raf": "T5-059", "mevcut_stok": 250, "minimum_stok": 50}, {"sku": "T5-060", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA12L91618UZN", "depo_kodu2": "RK-1412-WMN-L", "mst1": "", "mst2": "", "els1": "551GF12L916UNF00", "els2": "551GF12LRF010000", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 37, "raf": "T5-060", "mevcut_stok": 584, "minimum_stok": 50}, {"sku": "T5-061", "aciklama": "METRİK ORANTI NİPELLERİ", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XER126LZN", "depo_kodu2": "RK-1206-MMON-L", "mst1": "", "mst2": "", "els1": "551GF12LMFDOMDCF", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 34, "raf": "T5-061", "mevcut_stok": 876, "minimum_stok": 50}, {"sku": "T5-062", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA12LR12WZN", "depo_kodu2": "RK-2112-RMNP-L", "mst1": "", "mst2": "", "els1": "551GF12LR12F0000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 40, "raf": "T5-062", "mevcut_stok": 1047, "minimum_stok": 50}, {"sku": "T5-063", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA20SR12WZN", "depo_kodu2": "RK-2120-RMNP-S", "mst1": "", "mst2": "", "els1": "551GF20SR12F0000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 23, "raf": "T5-063", "mevcut_stok": 1316, "minimum_stok": 50}, {"sku": "T5-064", "aciklama": "BSP PFX KISA TİP REDÜKSİYONLAR", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "RI3438WZN", "depo_kodu2": "RK-2617-KRD", "mst1": "", "mst2": "", "els1": "551RI34X38CFX000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 20, "raf": "T5-064", "mevcut_stok": 1274, "minimum_stok": 50}, {"sku": "T5-065", "aciklama": "METRİK PERDE GEÇİŞ NİPELLERİ", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XK12LMGMZN", "depo_kodu2": "RK-1212-MPGN-L", "mst1": "", "mst2": "", "els1": "551SV12L00000000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 37, "raf": "T5-065", "mevcut_stok": 173, "minimum_stok": 50}, {"sku": "T5-066", "aciklama": "METRİK TE", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XG8LZN", "depo_kodu2": "RK-0808-MT-L", "mst1": "", "mst2": "", "els1": "551T08LCFX000000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 30, "raf": "T5-066", "mevcut_stok": 947, "minimum_stok": 50}, {"sku": "T5-067", "aciklama": "METRİK TE", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XG12LZN", "depo_kodu2": "RK-1212-MT-L", "mst1": "", "mst2": "", "els1": "551T12LCFX000000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 34, "raf": "T5-067", "mevcut_stok": 327, "minimum_stok": 50}, {"sku": "T5-068", "aciklama": "BSP PFX ALYANBAŞLI KÖRTAPA", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "VSCHR14WZN", "depo_kodu2": "RK-1319-RAT", "mst1": "", "mst2": "", "els1": "551VSTI14F000000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 36, "raf": "T5-068", "mevcut_stok": 935, "minimum_stok": 50}, {"sku": "T5-069", "aciklama": "METRİK PERDE GEÇİŞ NİPELLERİ", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XK8LMGMZN", "depo_kodu2": "RK-0808-MPGN-L", "mst1": "", "mst2": "", "els1": "551SV08L00000000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 20, "raf": "T5-069", "mevcut_stok": 1325, "minimum_stok": 50}, {"sku": "T5-070", "aciklama": "BSP METRİK 90° KONTRALI DİRSEK", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XBE20RSOAZN", "depo_kodu2": "RK-2620-RMKD-S", "mst1": "", "mst2": "", "els1": "551WFF20SR000000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 28, "raf": "T5-070", "mevcut_stok": 776, "minimum_stok": 50}, {"sku": "T5-071", "aciklama": "BSP METRİK 90° KONTRALI DİRSEK", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XBE16S7814UZN", "depo_kodu2": "", "mst1": "551WFF16S78U0000", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 31, "raf": "T5-071", "mevcut_stok": 640, "minimum_stok": 50}, {"sku": "T5-072", "aciklama": "BSP - METRİK PFX TERS RAKOR", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "RK-1310-RMTR-L", "mst1": "551FGF10LRFDA3C0", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 39, "raf": "T5-072", "mevcut_stok": 371, "minimum_stok": 50}, {"sku": "T5-073", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "RK-2110-RMNP-L", "mst1": "551GF10LR12FDOM0", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 39, "raf": "T5-073", "mevcut_stok": 162, "minimum_stok": 50}, {"sku": "T5-074", "aciklama": "PUL", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "1/4'' O-RINGLI SUPER PUL", "mst1": "", "mst2": "", "els1": "5514312242000000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 37, "raf": "T5-074", "mevcut_stok": 311, "minimum_stok": 50}, {"sku": "T5-075", "aciklama": "BSP ARA NİPELİ", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "RK-1313-RRN", "mst1": "", "mst2": "", "els1": "5514HMK4S0000000", "els2": "5514HMK4S0010000", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 24, "raf": "T5-075", "mevcut_stok": 80, "minimum_stok": 50}, {"sku": "T5-076", "aciklama": "BSP DİŞİ TE", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "RK-1313-DT", "mst1": "", "mst2": "", "els1": "551GF14DTFDCMF00", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 34, "raf": "T5-076", "mevcut_stok": 413, "minimum_stok": 50}, {"sku": "T5-077", "aciklama": "AYAR VALFI", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "1/4'' CEKLI HIZ AYAR VALFI", "mst1": "", "mst2": "", "els1": "551FT12515140000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 34, "raf": "T5-077", "mevcut_stok": 972, "minimum_stok": 50}, {"sku": "T5-078", "aciklama": "METRİK BLOK PFX METRİK HAVŞALI NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "RK-1412-MMBN-L", "mst1": "", "mst2": "", "els1": "551GF12LM14X1500", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 39, "raf": "T5-078", "mevcut_stok": 1294, "minimum_stok": 50}, {"sku": "T5-079", "aciklama": "BSP-METRİK KONTRALI DİRSEKLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "RK-1308-RMKD-L", "mst1": "", "mst2": "", "els1": "5511308RMKDL0000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 34, "raf": "T5-079", "mevcut_stok": 1075, "minimum_stok": 50}, {"sku": "T5-080", "aciklama": "BSP - METRİK DÖNER DİRSEK", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XSBE12MSZN", "depo_kodu2": "RK-2112-RMDD-S", "mst1": "551WH12SMOMDA3C0", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 27, "raf": "T5-080", "mevcut_stok": 662, "minimum_stok": 50}, {"sku": "T5-081", "aciklama": "BSP METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XA10L1220UZN", "depo_kodu2": "RK-2110-RMNP-S", "mst1": "551GF10SR12FD000", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 44, "raf": "T5-081", "mevcut_stok": 514, "minimum_stok": 50}, {"sku": "T5-082", "aciklama": "BSP-METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "RK-3320-RMNP-S", "mst1": "", "mst2": "", "els1": "551RK3320RMNPS00", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 32, "raf": "T5-082", "mevcut_stok": 842, "minimum_stok": 50}, {"sku": "T5-083", "aciklama": "BSP-METRİK KONTRALI DİRSEKLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "RK-2120-RMKD", "mst1": "", "mst2": "", "els1": "551RK2120RMKDS00", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 31, "raf": "T5-083", "mevcut_stok": 736, "minimum_stok": 50}, {"sku": "T5-084", "aciklama": "METRİK KOR RAKORLAR", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "RK-2012-MMTR-S", "mst1": "", "mst2": "", "els1": "551RK2012MMTRS00", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 29, "raf": "T5-084", "mevcut_stok": 282, "minimum_stok": 50}, {"sku": "T5-085", "aciklama": "UNF BLOK ORİNGLİ - METRİK NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "RK-2720-WMN-S", "mst1": "", "mst2": "", "els1": "551RK2720WMNS000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 29, "raf": "T5-085", "mevcut_stok": 343, "minimum_stok": 50}, {"sku": "T5-086", "aciklama": "UNF BLOK ORİNGLİ - METRİK NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "RK-2220-WMN-S", "mst1": "", "mst2": "", "els1": "551RK2220WMNS000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 25, "raf": "T5-086", "mevcut_stok": 1290, "minimum_stok": 50}, {"sku": "T5-087", "aciklama": "BSP-METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "RK-4825-RMNP-S", "mst1": "", "mst2": "", "els1": "551RK4825RMNPS00", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 23, "raf": "T5-087", "mevcut_stok": 667, "minimum_stok": 50}, {"sku": "T5-088", "aciklama": "BSP METRİK 90° KONTRALI DİRSEK", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "XBE10RLOZN", "depo_kodu2": "RK-1310-RMKD-L", "mst1": "551WFF10LROMDA3C", "mst2": "", "els1": "", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 29, "raf": "T5-088", "mevcut_stok": 1204, "minimum_stok": 50}, {"sku": "T5-089", "aciklama": "METRİK TERS DİRSEKLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "RK-0808-MTD-L", "mst1": "", "mst2": "", "els1": "551FW08LO0000000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 39, "raf": "T5-089", "mevcut_stok": 347, "minimum_stok": 50}, {"sku": "T5-090", "aciklama": "BSP-METRİK PFX NİPELLER", "tedarikci1": "Gates", "tedarikci2": "Rekorsan", "depo_kodu1": "", "depo_kodu2": "RK-2108-RMNP-L", "mst1": "", "mst2": "", "els1": "551GF08LR12F0000", "els2": "", "malzeme_tipi": "Bağlantı Elemanları", "olcu_birimi": "AD", "birim_agirlik": 42, "raf": "T5-090", "mevcut_stok": 1083, "minimum_stok": 50}];
-
-// ── STATE ──
-let opName = '';
+const API =  + API + ;
+let operator = '';
 let allData = [];
-let currentItem = null;
-let excelData = [];
-
-// ── YARDIMCI: Tüm kod sütunlarını getir ──
-function getAllCodes(i) {
-  // Objenin tüm key'lerini tara - içinde "KOD", "kod", "Kodu", "kodu" geçenleri al
-  const kodFields = Object.entries(i)
-    .filter(([k]) => k.toLowerCase().includes('kod') || k.toLowerCase().includes('sku'))
-    .map(([,v]) => String(v||''))
-    .filter(v => v && v !== '-');
-  return kodFields;
-}
-
-// ── YARDIMCI: Sütun isim uyumu ──
-function g(item, ...keys) {
-  for(const k of keys) {
-    if(item[k] !== undefined && item[k] !== null && item[k] !== '' && item[k] !== '-') 
-      return String(item[k]);
-  }
-  return '';
-}
-
-// ── BAŞLANGIÇ ──
-window.onload = function() {
-  document.getElementById('screen1').classList.add('active');
-  document.getElementById('opInput').addEventListener('keydown', e => { if(e.key==='Enter') startSession(); });
-  document.getElementById('hareketSku').addEventListener('keydown', e => { if(e.key==='Enter') skuAra(); });
-};
+let mevcutItem = null;
+let topluTip = 'giris';
+let topluData = [];
 
 // ── GİRİŞ ──
-async function startSession() {
-  const val = document.getElementById('opInput').value.trim();
-  if(!val) { showMsg('loginMsg', 'Lütfen adınızı girin.', 'red'); return; }
-  
+window.onload = () => {
+  document.getElementById('opInp').addEventListener('keydown', e => { if(e.key==='Enter') girisYap(); });
+  document.getElementById('hSku').addEventListener('keydown', e => { if(e.key==='Enter') hSkuAra(); });
+};
+
+async function girisYap() {
+  const op = document.getElementById('opInp').value.trim();
+  if(!op) { mesaj('loginMsg', 'Lütfen adınızı girin.', true); return; }
   const btn = document.getElementById('loginBtn');
-  btn.disabled = true;
-  btn.textContent = 'Yükleniyor...';
-  showMsg('loginMsg', 'Veriler yükleniyor...', 'gray');
-  
+  btn.disabled = true; btn.textContent = 'Yükleniyor...';
+  mesaj('loginMsg', 'Veriler yükleniyor...');
   try {
-    const res = await fetch(API_URL + '?action=getAll');
-    const json = await res.json();
-    if(json.success) {
-      allData = json.data;
-      opName = val;
-      document.getElementById('opTag').textContent = opName;
-      document.getElementById('screen1').classList.remove('active');
-      document.getElementById('screen2').classList.add('active');
-      loadUyarilar();
-    } else {
-      showMsg('loginMsg', 'Bağlantı hatası. Tekrar deneyin.', 'red');
-    }
-  } catch(e) {
-    showMsg('loginMsg', 'Sunucuya bağlanılamadı.', 'red');
-  }
-  btn.disabled = false;
-  btn.textContent = 'Giriş';
+    const r = await fetch(API + '?action=getAll');
+    const j = await r.json();
+    if(j.success) {
+      allData = j.data;
+      operator = op;
+      document.getElementById('opTag').textContent = op;
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      uyarilariYukle();
+    } else { mesaj('loginMsg', 'Bağlantı hatası!', true); }
+  } catch(e) { mesaj('loginMsg', 'Sunucuya ulaşılamadı!', true); }
+  btn.disabled = false; btn.textContent = 'Giriş';
 }
 
-function showMsg(id, text, color) {
+function mesaj(id, txt, err=false) {
   const el = document.getElementById(id);
-  el.style.display = 'block';
-  el.style.color = color === 'red' ? 'var(--danger)' : 'var(--muted)';
-  el.textContent = text;
+  el.textContent = txt;
+  el.style.color = err ? 'var(--danger)' : 'var(--muted)';
 }
 
-function changeOp() {
-  document.getElementById('screen2').classList.remove('active');
-  document.getElementById('screen1').classList.add('active');
-  document.getElementById('opInput').value = '';
-  clearSearch();
+function cikisYap() {
+  document.getElementById('login').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('opInp').value = '';
+  aramaSil();
 }
 
 // ── TABS ──
-function showTab(tab) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-' + tab).classList.add('active');
-  event.target.classList.add('active');
-  if(tab === 'uyarilar') loadUyarilar();
+function sekme(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.getElementById('p-' + id).classList.add('on');
+  el.classList.add('on');
+  if(id === 'uyarilar') uyarilariYukle();
 }
 
-// ── SORGULA ──
-function status(item) {
-  const m   = Number(item['Mevcut Stok']||item.Mevcut_Stok||item.mevcut_stok||0);
-  const min = Number(item['Minimum Stok']||item.Minimum_Stok||item.minimum_stok||0);
-  return m === 0 ? 'danger' : m < min ? 'warn' : 'ok';
+// ── ARAMA ──
+function normSku(s) { return String(s||'').trim().toLowerCase(); }
+
+function getAllCodes(item) {
+  return [
+    item['SKU Kodu']||item.sku||'',
+    item['Depo Kodu -1']||item['Depo Kodu -1 ']||item.depo1||'',
+    item['Depo Kodu -2']||item.depo2||'',
+  ].filter(Boolean);
 }
 
-function onSearch() {
-  const q = document.getElementById('searchInput').value.trim().toLowerCase();
-  document.getElementById('clearBtn').style.display = q ? 'block' : 'none';
+function aramaYap() {
+  const q = document.getElementById('searchInp').value.trim();
+  document.getElementById('searchX').style.display = q ? 'block' : 'none';
   if(q.length < 2) { hideSugg(); showEmpty(); return; }
-
-  const hits = allData.filter(i => {
-    const fields = getAllCodes(i);
-    return fields.some(f => String(f).toLowerCase().includes(q));
-  }).slice(0, 8);
-
-  if(hits.length === 0) { hideSugg(); showNotFound(); return; }
-  if(hits.length === 1) { hideSugg(); showCard(hits[0]); return; }
-  showSugg(hits);
+  const qn = q.toLowerCase();
+  const hits = allData.filter(i => getAllCodes(i).some(c => normSku(c).includes(qn))).slice(0,8);
+  if(!hits.length) { hideSugg(); document.getElementById('detayArea').innerHTML = '<div class="empty"><div class="empty-icon">—</div><div class="empty-txt">Bulunamadı</div></div>'; return; }
+  if(hits.length === 1) { hideSugg(); showDetay(hits[0]); return; }
+  showSugg(hits, qn);
 }
 
-function onKey(e) {
-  if(e.key === 'Enter') {
-    const q = document.getElementById('searchInput').value.trim().toLowerCase();
-    const m = allData.find(i =>
-      String(i.SKU_Kodu||'').toLowerCase() === q ||
-      String(i.Depo_Kodu_1||'').toLowerCase() === q ||
-      String(i.Depo_Kodu_2||'').toLowerCase() === q ||
-      String(i.MST_1||i.mst1||'').toLowerCase() === q ||
-      String(i.MST_2||i.mst2||'').toLowerCase() === q ||
-      String(i.ELS_1||i.els1||'').toLowerCase() === q ||
-      String(i.ELS_2||i.els2||'').toLowerCase() === q
-    );
-    if(m) { hideSugg(); showCard(m); }
-  }
+function aramaKey(e) {
+  if(e.key !== 'Enter') return;
+  const q = document.getElementById('searchInp').value.trim().toLowerCase();
+  const m = allData.find(i => getAllCodes(i).some(c => normSku(c) === q));
+  if(m) { hideSugg(); showDetay(m); }
 }
 
-function showSugg(items) {
-  const q = document.getElementById('searchInput').value.trim().toLowerCase();
-  const el = document.getElementById('suggestions');
+function showSugg(items, q) {
+  const el = document.getElementById('sugg');
   el.innerHTML = items.map(i => {
-    let etiket = '';
-    const tag = (lbl, val) => `<span style="font-size:0.68rem;background:#e8f4fd;color:#1a6496;padding:1px 6px;border-radius:4px;margin-left:4px">${lbl}: ${val}</span>`;
-    const sku=String(i['SKU Kodu']||i.SKU_Kodu||i.sku||'');
-    const aciklama=i['Kalem Açıklaması']||i.Kalem_Aciklamasi||i.aciklama||'';
-    // Hangi sütunda eşleşti?
-    const eslesenSutun = Object.entries(i).find(([k,v]) => 
-      k.toLowerCase().includes('kod') && String(v||'').toLowerCase().includes(q) && String(v) !== sku
-    );
-    if(eslesenSutun) etiket = tag(eslesenSutun[0], eslesenSutun[1]);
-    return `<div class="sug-item" onclick="pick('${sku}')">
-      <div class="sug-name">${aciklama}${etiket}</div>
-      <div class="sug-sku">${sku}</div>
+    const sku = i['SKU Kodu']||i.sku||'';
+    const acik = i['Kalem Açıklaması']||i.aciklama||'';
+    const d1 = i['Depo Kodu -1']||i['Depo Kodu -1 ']||i.depo1||'';
+    const d2 = i['Depo Kodu -2']||i.depo2||'';
+    let tag = '';
+    if(d1 && d1.toLowerCase().includes(q)) tag = `<span class="tag">Depo-1: ${d1}</span>`;
+    else if(d2 && d2.toLowerCase().includes(q)) tag = `<span class="tag">Depo-2: ${d2}</span>`;
+    return `<div class="sugg-item" onclick="pickItem('${sku}')">
+      <div class="sugg-name">${acik}${tag}</div>
+      <div class="sugg-sub">${sku}</div>
     </div>`;
   }).join('');
   el.style.display = 'block';
-  document.getElementById('resultArea').innerHTML = '';
+  document.getElementById('detayArea').innerHTML = '';
 }
 
-function hideSugg() { document.getElementById('suggestions').style.display = 'none'; }
+function hideSugg() { document.getElementById('sugg').style.display = 'none'; }
+function showEmpty() { document.getElementById('detayArea').innerHTML = '<div class="empty"><div class="empty-icon">🔎</div><div class="empty-txt">SKU veya Depo kodu ile arayın</div></div>'; }
 
-function pick(sku) {
-  const item = allData.find(i => String(i['SKU Kodu']||i.SKU_Kodu||i.sku||'') === String(sku));
-  document.getElementById('searchInput').value = sku;
-  document.getElementById('clearBtn').style.display = 'block';
-  hideSugg(); showCard(item);
+function pickItem(sku) {
+  const item = allData.find(i => String(i['SKU Kodu']||i.sku||'') === sku);
+  document.getElementById('searchInp').value = sku;
+  document.getElementById('searchX').style.display = 'block';
+  hideSugg();
+  if(item) showDetay(item);
 }
 
-function clearSearch() {
-  document.getElementById('searchInput').value = '';
-  document.getElementById('clearBtn').style.display = 'none';
-  hideSugg(); showEmpty(); currentItem = null;
+function aramaSil() {
+  document.getElementById('searchInp').value = '';
+  document.getElementById('searchX').style.display = 'none';
+  hideSugg(); showEmpty(); mevcutItem = null;
 }
 
-function showEmpty() {
-  document.getElementById('resultArea').innerHTML = '<div class="empty-state"><div class="empty-icon">🔎</div><div class="empty-text">SKU kodu girerek malzeme bilgisine ulaşın</div></div>';
+function durum(item) {
+  const m = Number(item['Mevcut Stok']||item.stok||0);
+  const mn = Number(item['Minimum Stok']||item.min_stok||0);
+  return m === 0 ? 'crit' : m < mn ? 'warn' : 'ok';
 }
 
-function showNotFound() {
-  document.getElementById('resultArea').innerHTML = '<div class="empty-state"><div class="empty-icon">—</div><div class="empty-text">Bu SKU kodu bulunamadı</div></div>';
-}
+function showDetay(item) {
+  mevcutItem = item;
+  const sku = item['SKU Kodu']||item.sku||'';
+  const acik = item['Kalem Açıklaması']||item.aciklama||'';
+  const stok = Number(item['Mevcut Stok']||item.stok||0);
+  const minS = Number(item['Minimum Stok']||item.min_stok||0);
+  const birim = item['Ölçü Birimi']||item.birim||'';
+  const agir = Number(item['Birim Ağırlık']||item['Birim Ağırlık ( Gram)']||item.agirlik||0);
+  const raf = item['Raf / Lokasyon']||item['Raf']||item.raf||'—';
+  const tip = item['Malzeme Tipi']||item.tip||'—';
+  const ted1 = item['Tedarikçi -1']||item.tedarikci1||'—';
+  const ted2 = item['Tedarikçi -2']||item.tedarikci2||'';
+  const ted = ted2 ? ted1 + ' / ' + ted2 : ted1;
+  const d1 = item['Depo Kodu -1']||item['Depo Kodu -1 ']||item.depo1||'—';
+  const d2 = item['Depo Kodu -2']||item.depo2||'';
+  const depo = d2 ? d1 + ' / ' + d2 : d1;
+  const d = durum(item);
+  const pillTxt = d==='crit' ? 'Kritik' : d==='warn' ? 'Uyarı' : 'Normal';
+  const pillCls = d==='crit' ? 'pill-crit' : d==='warn' ? 'pill-warn' : 'pill-ok';
 
-function showCard(item) {
-  currentItem = item;
-  const s = status(item);
-  const pt = s==='danger' ? 'Kritik' : s==='warn' ? 'Uyarı' : 'Normal';
-  const _sku   = item['SKU Kodu']||_sku||'';
-  const _acik  = item['Kalem Açıklaması']||_acik||'';
-  const _stok  = Number(item['Mevcut Stok']||item.Mevcut_Stok||item.mevcut_stok||0);
-  const _min   = Number(item['Minimum Stok']||_min||item.minimum_stok||0);
-  const _birim = item['Ölçü Birimi']||_birim||item.olcu_birimi||'';
-  const _agir  = Number(item['Birim Ağırlık  ( Gram)']||item['Birim Ağırlık ( Gram)']||_agir||0);
-  const _raf   = item['Raf / Lokasyon']||_raf||'';
-  const _tip   = item['Malzeme Tipi']||_tip||'';
-  const depo   = [item['Depo Kodu -1 ']||item['Depo Kodu -1']||item.Depo_Kodu_1||item.depo_kodu1, item['Depo Kodu -2']||item.Depo_Kodu_2||item.depo_kodu2].filter(v=>v&&v!=='-').join(' / ') || '—';
-  const ted    = [item['Tedarikçi -1']||item.Tedarikci_1||item.tedarikci1, item['Tedarikçi -2']||item.Tedarikci_2||item.tedarikci2].filter(v=>v&&v!=='-').join(' / ') || '—';
-  const mst    = [item['MST-1 KOD']||item.MST_1||item.mst1, item['MST-2 KOD']||item.MST_2||item.mst2].filter(v=>v&&v!=='-').join(' / ') || '';
-  const els    = [item['ELS-1 KOD']||item.ELS_1||item.els1, item['ELS-2 KOD']||item.ELS_2||item.els2].filter(v=>v&&v!=='-').join(' / ') || '';
-  const wSec = item.Birim_Agirlik > 0 ? `
-    <div class="weight-card">
-      <div class="wc-head">Ağırlık bazlı sayım</div>
-      <div class="wc-body">
-        <div class="wc-row">
-          <input class="wc-input" type="number" placeholder="Toplam ağırlık (gram)" id="wIn" oninput="calcW()" />
-          <span style="font-size:0.82rem;color:var(--muted);white-space:nowrap">gram</span>
+  const agirSec = agir > 0 ? `
+    <div class="agir-card">
+      <div class="card-head">Ağırlık Bazlı Sayım</div>
+      <div class="agir-body">
+        <div class="agir-row">
+          <input class="agir-inp" type="number" placeholder="Toplam ağırlık (gram)" id="agirInp" oninput="agirHesap()" />
+          <span style="font-size:0.8rem;color:var(--muted)">gram</span>
         </div>
-        <div class="wc-result" id="wRes"></div>
+        <div class="agir-res" id="agirRes">
+          <div class="agir-val" id="agirVal"></div>
+          <div class="agir-sub" id="agirSub"></div>
+        </div>
       </div>
     </div>` : '';
-  document.getElementById('resultArea').innerHTML = `
-    <div class="result-card">
-      <div class="rc-head">
-        <div class="rc-name">${_acik}</div>
-        <span class="status-pill pill-${s}">${pt}</span>
+
+  document.getElementById('detayArea').innerHTML = `
+    <div class="det-card">
+      <div class="det-head">
+        <div class="det-name">${acik}</div>
+        <span class="pill ${pillCls}">${pillTxt}</span>
       </div>
-      <div class="stock-grid">
-        <div class="stock-cell">
-          <div class="stock-lbl">Mevcut stok</div>
-          <div class="stock-val">${_stok.toLocaleString()}</div>
-          <div class="stock-unit">${_birim}</div>
+      <div class="stok-grid">
+        <div class="stok-cell">
+          <div class="stok-lbl">Mevcut Stok</div>
+          <div class="stok-val">${stok.toLocaleString()}</div>
+          <div class="stok-unit">${birim}</div>
         </div>
-        <div class="stock-cell">
-          <div class="stock-lbl">Minimum stok</div>
-          <div class="stock-val">${_min}</div>
-          <div class="stock-unit">${_birim}</div>
+        <div class="stok-cell">
+          <div class="stok-lbl">Minimum Stok</div>
+          <div class="stok-val">${minS}</div>
+          <div class="stok-unit">${birim}</div>
         </div>
       </div>
-      <div class="detail-list">
-        <div class="dl-row"><span class="dl-lbl">SKU Kodu</span><span class="dl-val mono">${_sku}</span></div>
-        <div class="dl-row"><span class="dl-lbl">Kalem Açıklaması</span><span class="dl-val">${_acik}</span></div>
-        <div class="dl-row"><span class="dl-lbl">Tedarikçi -1</span><span class="dl-val">${item['Tedarikçi -1']||item.tedarikci1||'—'}</span></div>
-        <div class="dl-row"><span class="dl-lbl">Tedarikçi -2</span><span class="dl-val">${item['Tedarikçi -2']||item.tedarikci2||'—'}</span></div>
-        <div class="dl-row"><span class="dl-lbl">Depo Kodu -1</span><span class="dl-val mono">${item['Depo Kodu -1 ']||item['Depo Kodu -1']||item.depo_kodu1||'—'}</span></div>
-        <div class="dl-row"><span class="dl-lbl">Depo Kodu -2</span><span class="dl-val mono">${item['Depo Kodu -2']||item.depo_kodu2||'—'}</span></div>
-        ${item['MST-1 KOD']||item.mst1 ? `<div class="dl-row"><span class="dl-lbl">MST-1 KOD</span><span class="dl-val mono">${item['MST-1 KOD']||item.mst1||'—'}</span></div>` : ''}
-        ${item['MST-2 KOD']||item.mst2 ? `<div class="dl-row"><span class="dl-lbl">MST-2 KOD</span><span class="dl-val mono">${item['MST-2 KOD']||item.mst2||'—'}</span></div>` : ''}
-        ${item['ELS-1 KOD']||item.els1 ? `<div class="dl-row"><span class="dl-lbl">ELS-1 KOD</span><span class="dl-val mono">${item['ELS-1 KOD']||item.els1||'—'}</span></div>` : ''}
-        ${item['ELS-2 KOD']||item.els2 ? `<div class="dl-row"><span class="dl-lbl">ELS-2 KOD</span><span class="dl-val mono">${item['ELS-2 KOD']||item.els2||'—'}</span></div>` : ''}
-        <div class="dl-row"><span class="dl-lbl">Malzeme Tipi</span><span class="dl-val">${_tip || '—'}</span></div>
-        <div class="dl-row"><span class="dl-lbl">Ölçü Birimi</span><span class="dl-val">${_birim || '—'}</span></div>
-        <div class="dl-row"><span class="dl-lbl">Birim Ağırlık</span><span class="dl-val">${_agir} gr</span></div>
-        <div class="dl-row"><span class="dl-lbl">Raf / Lokasyon</span><span class="dl-val">${_raf || '—'}</span></div>
-        <div class="dl-row"><span class="dl-lbl">Minimum Stok</span><span class="dl-val">${_min} ${_birim || ''}</span></div>
+      <div class="det-rows">
+        <div class="det-row"><span class="det-lbl">SKU Kodu</span><span class="det-val mono">${sku}</span></div>
+        <div class="det-row"><span class="det-lbl">Depo Kodu</span><span class="det-val mono">${depo}</span></div>
+        <div class="det-row"><span class="det-lbl">Malzeme Tipi</span><span class="det-val">${tip}</span></div>
+        <div class="det-row"><span class="det-lbl">Ölçü Birimi</span><span class="det-val">${birim}</span></div>
+        <div class="det-row"><span class="det-lbl">Birim Ağırlık</span><span class="det-val">${agir} gr</span></div>
+        <div class="det-row"><span class="det-lbl">Raf / Lokasyon</span><span class="det-val">${raf}</span></div>
+        <div class="det-row"><span class="det-lbl">Tedarikçi</span><span class="det-val">${ted}</span></div>
       </div>
     </div>
-    ${wSec}`;
+    ${agirSec}`;
 }
 
-function calcW() {
-  if(!currentItem) return;
-  const tw = parseFloat(document.getElementById('wIn').value);
-  const res = document.getElementById('wRes');
-  if(!tw||tw<=0){res.style.display='none';return;}
-  const qty = Math.round(tw / currentItem.Birim_Agirlik);
-  res.innerHTML = `<div class="wc-result-val">${qty.toLocaleString()} ${currentItem.Olcu_Birimi}</div><div class="wc-result-lbl">tahmini adet</div>`;
+function agirHesap() {
+  if(!mevcutItem) return;
+  const agir = Number(mevcutItem['Birim Ağırlık']||mevcutItem['Birim Ağırlık ( Gram)']||mevcutItem.agirlik||0);
+  const tw = parseFloat(document.getElementById('agirInp').value);
+  const res = document.getElementById('agirRes');
+  if(!tw || tw <= 0 || agir <= 0) { res.style.display='none'; return; }
+  const qty = Math.round(tw / agir);
+  const birim = mevcutItem['Ölçü Birimi']||mevcutItem.birim||'';
+  document.getElementById('agirVal').textContent = qty.toLocaleString() + ' ' + birim;
+  document.getElementById('agirSub').textContent = 'tahmini adet';
   res.style.display = 'block';
 }
 
-// ── İŞLEM TÜRÜ DEĞİŞ ──
-function islemTuruDegis() {
-  const tur = document.getElementById('islemTuru').value;
-  const giris = tur.startsWith('giris');
-  document.getElementById('girisAlanlari').style.display = giris ? 'block' : 'none';
-  document.getElementById('cikisAlanlari').style.display = giris ? 'none' : 'block';
+// ── İŞLEM TÜRÜ ──
+function hTurDegis() {
+  const t = document.getElementById('hTur').value;
+  const giris = t.startsWith('g_');
+  document.getElementById('girisAlanlar').style.display = giris ? 'block' : 'none';
+  document.getElementById('cikisAlanlar').style.display = giris ? 'none' : 'block';
   document.getElementById('btnGiris').style.display = giris ? 'block' : 'none';
   document.getElementById('btnCikis').style.display = giris ? 'none' : 'block';
-  document.getElementById('uretimAlani').style.display = tur === 'cikis_uretim' ? 'block' : 'none';
-  document.getElementById('uretimDisiAlani').style.display = tur !== 'cikis_uretim' ? 'block' : 'none';
+  document.getElementById('uretimAlan').style.display = t==='c_uretim' ? 'block' : 'none';
+  document.getElementById('disiAlan').style.display = t!=='c_uretim' ? 'block' : 'none';
 }
 
-// ── SKU ARA (Hareket formu) ──
-function skuAra() {
-  const q = document.getElementById('hareketSku').value.trim().toLowerCase();
-  const info = document.getElementById('hareketSkuInfo');
-  const btnG = document.getElementById('btnGiris');
-  const btnC = document.getElementById('btnCikis');
-  if(!q) { info.style.display='none'; btnG.disabled=true; btnC.disabled=true; return; }
-
-  // SKU, Depo Kodu, MST veya ELS ile ara
-  const item = allData.find(i => {
-    const fields = getAllCodes(i);
-    return fields.some(f => String(f).toLowerCase() === q);
-  });
-
+// ── SKU ARA (Hareket) ──
+function hSkuAra() {
+  const q = document.getElementById('hSku').value.trim();
+  const info = document.getElementById('hSkuInfo');
+  const bg = document.getElementById('btnGiris');
+  const bc = document.getElementById('btnCikis');
+  document.getElementById('hSku').dataset.rsku = '';
+  if(!q) { info.textContent=''; bg.disabled=true; bc.disabled=true; return; }
+  const qn = q.toLowerCase();
+  const item = allData.find(i => getAllCodes(i).some(c => normSku(c) === qn));
   if(item) {
-    const resolvedSku = String(item['SKU Kodu']||item.SKU_Kodu||item.sku||'');
-    const aciklama = item['Kalem Açıklaması']||item.Kalem_Aciklamasi||item.aciklama||'';
-    const stok = Number(item['Mevcut Stok']||item.Mevcut_Stok||item.mevcut_stok||0);
-    const birim = item['Ölçü Birimi']||item.Olcu_Birimi||item.olcu_birimi||'';
-
-    // resolvedSku'yu sakla
-    document.getElementById('hareketSku').dataset.resolvedSku = resolvedSku;
-
-    info.style.display = 'block';
-    info.style.color = 'var(--muted)';
-    info.textContent = aciklama + ' (SKU: ' + resolvedSku + ') — Mevcut: ' + stok.toLocaleString() + ' ' + birim;
-    btnG.disabled = false;
-    btnC.disabled = false;
+    const rsku = item['SKU Kodu']||item.sku||'';
+    document.getElementById('hSku').dataset.rsku = rsku;
+    const stok = Number(item['Mevcut Stok']||item.stok||0);
+    const birim = item['Ölçü Birimi']||item.birim||'';
+    const acik = item['Kalem Açıklaması']||item.aciklama||'';
+    info.textContent = acik + ' — Mevcut: ' + stok.toLocaleString() + ' ' + birim;
+    info.className = 'sku-info';
+    bg.disabled = false; bc.disabled = false;
   } else {
-    info.style.display = 'block';
-    info.textContent = 'Bulunamadı — SKU, Depo, MST veya ELS kodu deneyin';
-    info.style.color = 'var(--danger)';
-    document.getElementById('hareketSku').dataset.resolvedSku = '';
-    btnG.disabled = true;
-    btnC.disabled = true;
+    info.textContent = 'Bulunamadı';
+    info.className = 'sku-info err';
+    bg.disabled = true; bc.disabled = true;
   }
 }
 
 // ── STOK GİRİŞ ──
 async function stokGiris() {
-  // SKU'yu bul - resolvedSku varsa kullan, yoksa inputtan ara
-  const _inputVal = document.getElementById('hareketSku').value.trim();
-  const _resolved = document.getElementById('hareketSku').dataset.resolvedSku || '';
-  const _foundItem = allData.find(i => {
-    const codes = getAllCodes(i);
-    return codes.some(f => String(f).toLowerCase() === _inputVal.toLowerCase());
-  });
-  const sku = _resolved || (_foundItem ? String(_foundItem['SKU Kodu']||_foundItem.sku||'') : _inputVal);
-  const miktar = parseFloat(document.getElementById('hareketMiktar').value);
-  const tur = document.getElementById('islemTuru').value;
-  const tedarikci = document.getElementById('girisTedarikci').value.trim();
-  const belge = document.getElementById('girisBelge').value.trim();
-  const not = document.getElementById('hareketNot').value.trim();
-  if(!sku || !miktar || miktar<=0) { showToast('SKU ve miktar zorunlu!', 'error'); return; }
-
-  // Not metnini zenginleştir
-  const turAdi = tur === 'giris_tedarikciden' ? 'Tedarikçi Girişi' : 'İade/Düzeltme';
-  let detay = turAdi;
-  if(tedarikci) detay += ' | Tedarikçi: ' + tedarikci;
-  if(belge) detay += ' | Belge: ' + belge;
-  if(not) detay += ' | ' + not;
-
-  document.getElementById('btnGiris').disabled = true;
-  document.getElementById('btnGiris').textContent = 'Kaydediliyor...';
-
+  const rsku = document.getElementById('hSku').dataset.rsku || document.getElementById('hSku').value.trim();
+  const miktar = parseFloat(document.getElementById('hMiktar').value);
+  if(!rsku || !miktar || miktar<=0) { toast('SKU ve miktar zorunlu!', 'err'); return; }
+  const t = document.getElementById('hTur').value;
+  const ted = document.getElementById('hTedarikci').value.trim();
+  const belge = document.getElementById('hBelge').value.trim();
+  const not_ = document.getElementById('hNot').value.trim();
+  let not = t==='g_tedarikciden' ? 'Tedarikçi Girişi' : 'İade/Düzeltme';
+  if(ted) not += ' | Tedarikçi: '+ted;
+  if(belge) not += ' | Belge: '+belge;
+  if(not_) not += ' | '+not_;
+  const btn = document.getElementById('btnGiris');
+  btn.disabled=true; btn.textContent='Kaydediliyor...';
   try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'giris', sku, miktar, operator: opName, not: detay })
-    });
-    const json = await res.json();
-    if(json.success) {
-      const item = allData.find(i => String(i.SKU_Kodu) === String(sku));
-      if(item) item.Mevcut_Stok = json.yeniStok;
-      showToast('✓ Giriş kaydedildi! Yeni stok: ' + json.yeniStok, 'success');
-      document.getElementById('hareketMiktar').value = '';
-      document.getElementById('hareketNot').value = '';
-      document.getElementById('girisTedarikci').value = '';
-      document.getElementById('girisBelge').value = '';
-      skuAra();
-    } else {
-      showToast(json.error || 'Hata oluştu', 'error');
-    }
-  } catch(e) {
-    showToast('Bağlantı hatası', 'error');
-  }
-  document.getElementById('btnGiris').disabled = false;
-  document.getElementById('btnGiris').textContent = '+ Stok Girişi';
+    const r = await fetch(API, {method:'POST', body:JSON.stringify({action:'giris',sku:rsku,miktar,operator,not})});
+    const j = await r.json();
+    if(j.success) {
+      const item = allData.find(i => String(i['SKU Kodu']||i.sku||'')===rsku);
+      if(item) { if(item['Mevcut Stok']!==undefined) item['Mevcut Stok']=j.yeniStok; else item.stok=j.yeniStok; }
+      toast('✓ Giriş kaydedildi! Yeni stok: '+j.yeniStok, 'ok');
+      temizleForm();
+    } else { toast(j.error||'Hata!', 'err'); }
+  } catch(e) { toast('Bağlantı hatası!', 'err'); }
+  btn.disabled=false; btn.textContent='+ Stok Girişi';
 }
 
 // ── STOK ÇIKIŞ ──
 async function stokCikis() {
-  // SKU'yu bul - resolvedSku varsa kullan, yoksa inputtan ara
-  const _inputVal2 = document.getElementById('hareketSku').value.trim();
-  const _resolved2 = document.getElementById('hareketSku').dataset.resolvedSku || '';
-  const _foundItem2 = allData.find(i => {
-    const codes = getAllCodes(i);
-    return codes.some(f => String(f).toLowerCase() === _inputVal2.toLowerCase());
-  });
-  const sku = _resolved2 || (_foundItem2 ? String(_foundItem2['SKU Kodu']||_foundItem2.sku||'') : _inputVal2);
-  const miktar = parseFloat(document.getElementById('hareketMiktar').value);
-  const tur = document.getElementById('islemTuru').value;
-  const not = document.getElementById('hareketNot').value.trim();
-  if(!sku || !miktar || miktar<=0) { showToast('SKU ve miktar zorunlu!', 'error'); return; }
-
-  // Not metnini zenginleştir
-  let detay = '';
-  if(tur === 'cikis_uretim') {
-    const ueNo = document.getElementById('uretimNo').value.trim();
-    const ueAdi = document.getElementById('uretimAdi').value.trim();
-    detay = 'Üretim Çıkışı';
-    if(ueNo) detay += ' | İş Emri: ' + ueNo;
-    if(ueAdi) detay += ' | Ürün: ' + ueAdi;
-  } else if(tur === 'cikis_uretim_disi') {
-    const sebep = document.getElementById('cikisSebebi').value.trim();
-    detay = 'Üretim Dışı Çıkış';
-    if(sebep) detay += ' | Sebep: ' + sebep;
-  } else if(tur === 'cikis_fire') {
-    const sebep = document.getElementById('cikisSebebi').value.trim();
-    detay = 'Fire/Hasar';
-    if(sebep) detay += ' | ' + sebep;
+  const rsku = document.getElementById('hSku').dataset.rsku || document.getElementById('hSku').value.trim();
+  const miktar = parseFloat(document.getElementById('hMiktar').value);
+  if(!rsku || !miktar || miktar<=0) { toast('SKU ve miktar zorunlu!', 'err'); return; }
+  const t = document.getElementById('hTur').value;
+  const not_ = document.getElementById('hNot').value.trim();
+  let not = '';
+  if(t==='c_uretim') {
+    const ue = document.getElementById('hUretimNo').value.trim();
+    const ua = document.getElementById('hUrunAdi').value.trim();
+    not = 'Üretim Çıkışı';
+    if(ue) not += ' | İş Emri: '+ue;
+    if(ua) not += ' | Ürün: '+ua;
+  } else if(t==='c_uretim_disi') {
+    const s = document.getElementById('hSebep').value.trim();
+    not = 'Üretim Dışı Çıkış';
+    if(s) not += ' | '+s;
+  } else {
+    const s = document.getElementById('hSebep').value.trim();
+    not = 'Fire/Hasar';
+    if(s) not += ' | '+s;
   }
-  if(not) detay += ' | ' + not;
-
-  document.getElementById('btnCikis').disabled = true;
-  document.getElementById('btnCikis').textContent = 'Kaydediliyor...';
-
+  if(not_) not += ' | '+not_;
+  const btn = document.getElementById('btnCikis');
+  btn.disabled=true; btn.textContent='Kaydediliyor...';
   try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'cikis', sku, miktar, operator: opName, not: detay })
-    });
-    const json = await res.json();
-    if(json.success) {
-      const item = allData.find(i => String(i.SKU_Kodu) === String(sku));
-      if(item) item.Mevcut_Stok = json.yeniStok;
-      showToast('✓ Çıkış kaydedildi! Yeni stok: ' + json.yeniStok, 'success');
-      document.getElementById('hareketMiktar').value = '';
-      document.getElementById('hareketNot').value = '';
-      document.getElementById('uretimNo').value = '';
-      document.getElementById('uretimAdi').value = '';
-      document.getElementById('cikisSebebi').value = '';
-      skuAra();
-    } else {
-      showToast(json.error || 'Hata oluştu', 'error');
-    }
-  } catch(e) {
-    showToast('Bağlantı hatası', 'error');
-  }
-  document.getElementById('btnCikis').disabled = false;
-  document.getElementById('btnCikis').textContent = '− Stok Çıkışı';
+    const r = await fetch(API, {method:'POST', body:JSON.stringify({action:'cikis',sku:rsku,miktar,operator,not})});
+    const j = await r.json();
+    if(j.success) {
+      const item = allData.find(i => String(i['SKU Kodu']||i.sku||'')===rsku);
+      if(item) { if(item['Mevcut Stok']!==undefined) item['Mevcut Stok']=j.yeniStok; else item.stok=j.yeniStok; }
+      toast('✓ Çıkış kaydedildi! Yeni stok: '+j.yeniStok, 'ok');
+      temizleForm();
+    } else { toast(j.error||'Hata!', 'err'); }
+  } catch(e) { toast('Bağlantı hatası!', 'err'); }
+  btn.disabled=false; btn.textContent='− Stok Çıkışı';
 }
 
-// ── TOPLU İŞLEM TİPİ ──
-let topluTip = 'cikis';
-function setTopluTip(tip) {
+function temizleForm() {
+  ['hMiktar','hTedarikci','hBelge','hUretimNo','hUrunAdi','hSebep','hNot'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value='';
+  });
+  hSkuAra();
+}
+
+// ── TOPLU İŞLEM ──
+function topluTipSec(tip) {
   topluTip = tip;
-  document.getElementById('tabGirisBtn').classList.toggle('active-tab', tip==='giris');
-  document.getElementById('tabCikisBtn').classList.toggle('active-tab', tip==='cikis');
-  document.getElementById('btnTopluGiris').style.display = tip==='giris' ? 'block' : 'none';
-  document.getElementById('btnTopluCikis').style.display = tip==='cikis' ? 'block' : 'none';
-  // Dosya varsa önizlemeyi yenile
-  if(excelData.length > 0) renderPreview();
+  document.getElementById('tGirisBtn').classList.toggle('on', tip==='giris');
+  document.getElementById('tCikisBtn').classList.toggle('on', tip==='cikis');
+  document.getElementById('btnTopluGiris').style.display = 'none';
+  document.getElementById('btnTopluCikis').style.display = 'none';
+  if(topluData.length) onizleGoster();
 }
 
-// ── EXCEL TOPLU ÇIKIŞ ──
-function handleFile(event) {
+function dosyaYukle(event) {
   const file = event.target.files[0];
   if(!file) return;
   const ext = file.name.split('.').pop().toLowerCase();
-
-  if(ext === 'csv') {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      parseCSV(e.target.result);
-    };
-    reader.readAsText(file, 'UTF-8');
-  } else if(ext === 'xlsx' || ext === 'xls') {
-    const reader = new FileReader();
-    reader.onload = function(e) {
+  if(ext==='csv') {
+    const r = new FileReader();
+    r.onload = e => csvParse(e.target.result);
+    r.readAsText(file, 'UTF-8');
+  } else if(ext==='xlsx'||ext==='xls') {
+    const r = new FileReader();
+    r.onload = e => {
       try {
-        const data = new Uint8Array(e.target.result);
-        const wb = XLSX.read(data, {type: 'array'});
+        const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws, {header:1});
-        parseRows(rows);
-      } catch(err) {
-        showToast('Excel okuma hatası: ' + err.message, 'error');
-      }
+        rowsParse(XLSX.utils.sheet_to_json(ws, {header:1}));
+      } catch(err) { toast('Excel okuma hatası!', 'err'); }
     };
-    reader.readAsArrayBuffer(file);
-  } else {
-    showToast('Desteklenmeyen dosya tipi. CSV veya Excel yükleyin.', 'error');
-  }
+    r.readAsArrayBuffer(file);
+  } else { toast('CSV veya Excel yükleyin!', 'err'); }
 }
 
-function parseCSV(text) {
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
-  const rows = lines.map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g,'')));
-  parseRows(rows);
+function csvParse(text) {
+  const lines = text.split(/?
+/).filter(l => l.trim());
+  rowsParse(lines.map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g,''))));
 }
 
-function parseRows(rows) {
-  excelData = [];
-  if(!rows || rows.length < 2) {
-    showToast('Dosyada veri bulunamadı!', 'error');
-    return;
-  }
-
-  // İlk satır başlık - sütun indexlerini bul
-  const header = rows[0].map(h => String(h||'').toLowerCase().trim());
-  const skuIdx    = header.findIndex(h => h.includes('sku') || h.includes('kod'));
-  const miktarIdx = header.findIndex(h => h.includes('miktar') || h.includes('adet'));
-  const tedIdx    = header.findIndex(h => h.includes('tedarik'));
-  const irsIdx    = header.findIndex(h => h.includes('irsali') || h.includes('fatura'));
-  const ueIdx     = header.findIndex(h => h.includes('uretim') || h.includes('üretim') || h.includes('iş') || h.includes('is_'));
-  const uaIdx     = header.findIndex(h => h.includes('urun') || h.includes('ürün') || h.includes('proje'));
-  const notIdx    = header.findIndex(h => h.includes('not') || h.includes('sebep') || h.includes('acik'));
-
-  const si = skuIdx >= 0 ? skuIdx : 0;
-  const mi = miktarIdx >= 0 ? miktarIdx : 1;
-
+function rowsParse(rows) {
+  if(!rows || rows.length<2) { toast('Dosyada veri bulunamadı!', 'err'); return; }
+  const hdr = rows[0].map(h => String(h||'').toLowerCase().trim());
+  const si = hdr.findIndex(h => h.includes('sku')||h.includes('kod'));
+  const mi = hdr.findIndex(h => h.includes('miktar')||h.includes('adet'));
+  const ti = hdr.findIndex(h => h.includes('tedarik'));
+  const ii = hdr.findIndex(h => h.includes('irsali')||h.includes('fatura'));
+  const ui = hdr.findIndex(h => h.includes('uretim')||h.includes('üretim')||h.includes('iş'));
+  const ai = hdr.findIndex(h => h.includes('urun')||h.includes('ürün'));
+  const ni = hdr.findIndex(h => h.includes('not')||h.includes('sebep'));
+  const skuIdx = si>=0 ? si : 0;
+  const mikIdx = mi>=0 ? mi : 1;
+  topluData = [];
   for(let i=1; i<rows.length; i++) {
     const cols = rows[i];
-    if(!cols || cols.length < 2) continue;
-    
-    const sku = String(cols[si]||'').trim();
-    if(!sku || sku === '' || sku.toLowerCase() === 'null') continue;
-    
-    // Miktar - sayıya çevir
-    let miktar = 0;
-    const mVal = cols[mi];
-    if(typeof mVal === 'number') {
-      miktar = mVal;
-    } else {
-      miktar = parseFloat(String(mVal||'').replace(',','.'));
-    }
-    if(isNaN(miktar) || miktar <= 0) continue;
-
-    // allData'da bu SKU var mı? - Büyük/küçük harf ve boşluk duyarsız
-    const skuNorm = sku.toLowerCase().replace(/\s+/g,'');
-    const found = allData.find(it => {
-      const itSku = String(it['SKU Kodu']||it.SKU_Kodu||it.sku||'').trim().toLowerCase().replace(/\s+/g,'');
-      return itSku === skuNorm;
-    });
-
-    excelData.push({
-      sku,
-      miktar,
-      found: !!found,
-      extra: {
-        tedarikci: tedIdx >= 0 ? String(cols[tedIdx]||'').trim() : '',
-        irsaliye:  irsIdx >= 0 ? String(cols[irsIdx]||'').trim() : '',
-        uretimNo:  ueIdx  >= 0 ? String(cols[ueIdx] ||'').trim() : '',
-        urunAdi:   uaIdx  >= 0 ? String(cols[uaIdx] ||'').trim() : '',
-        sebep:     notIdx >= 0 ? String(cols[notIdx] ||'').trim() : '',
+    if(!cols||cols.length<2) continue;
+    const sku = String(cols[skuIdx]||'').trim();
+    if(!sku) continue;
+    const mVal = cols[mikIdx];
+    const miktar = typeof mVal==='number' ? mVal : parseFloat(String(mVal||'').replace(',','.'));
+    if(isNaN(miktar)||miktar<=0) continue;
+    const skuN = sku.toLowerCase();
+    const found = allData.find(it => getAllCodes(it).some(c => normSku(c)===skuN));
+    topluData.push({
+      sku, miktar, found: !!found,
+      ex: {
+        tedarikci: ti>=0 ? String(cols[ti]||'').trim() : '',
+        irsaliye:  ii>=0 ? String(cols[ii]||'').trim() : '',
+        uretimNo:  ui>=0 ? String(cols[ui]||'').trim() : '',
+        urunAdi:   ai>=0 ? String(cols[ai]||'').trim() : '',
+        sebep:     ni>=0 ? String(cols[ni]||'').trim() : '',
       }
     });
   }
-
-  if(excelData.length === 0) {
-    showToast('Geçerli veri bulunamadı! Başlık satırı SKU_Kodu ve Miktar içermeli.', 'error');
-    return;
-  }
-  renderPreview();
+  if(!topluData.length) { toast('Geçerli veri bulunamadı!', 'err'); return; }
+  onizleGoster();
 }
 
-function renderPreview() {
-  const isim = topluTip === 'giris' ? '+' : '-';
-  let html = '';
-  excelData.forEach(d => {
-    const found = allData.find(it => String(it.SKU_Kodu) === String(d.sku));
-    // Ek bilgi satırı
-    let ekBilgi = [];
-    if(d.tedarikci) ekBilgi.push('Tedarikçi: ' + d.tedarikci);
-    if(d.irsaliye)  ekBilgi.push('İrsaliye: ' + d.irsaliye);
-    if(d.uretimNo)  ekBilgi.push('İş Emri: ' + d.uretimNo);
-    if(d.uretimAdi) ekBilgi.push('Ürün: ' + d.uretimAdi);
-    if(d.not)       ekBilgi.push(d.not);
-    html += `<div class="excel-row ${!d.found?'err':''}">
-      <div style="flex:1;min-width:0">
-        <div>${d.found && found ? found.Kalem_Aciklamasi.substring(0,45) : '<span style="color:var(--danger)">SKU bulunamadı</span>'}</div>
-        <div class="sku">${d.sku}${ekBilgi.length ? ' · ' + ekBilgi.join(' · ') : ''}</div>
-      </div>
-      <span class="miktar" style="color:${topluTip==='giris'?'var(--ok)':'var(--danger)'};flex-shrink:0">${isim}${d.miktar}</span>
+function onizleGoster() {
+  const isim = topluTip==='giris' ? '+' : '-';
+  const renk = topluTip==='giris' ? 'var(--ok)' : 'var(--danger)';
+  let html = '<div class="card"><div style="border-radius:var(--r);overflow:hidden">';
+  topluData.forEach(d => {
+    const found = allData.find(it => getAllCodes(it).some(c => normSku(c)===d.sku.toLowerCase()));
+    const acik = found ? (found['Kalem Açıklaması']||found.aciklama||d.sku) : 'SKU bulunamadı';
+    html += `<div class="prev-item ${!d.found?'err':''}">
+      <div><div>${acik}</div><div class="prev-sku">${d.sku}</div></div>
+      <div class="prev-miktar" style="color:${renk}">${isim}${d.miktar}</div>
     </div>`;
   });
-  const valid = excelData.filter(d=>d.found).length;
-  const total = excelData.length;
-  document.getElementById('excelPreview').innerHTML = 
-    `<div style="font-size:0.75rem;color:var(--muted);padding:8px 16px;border-bottom:1px solid var(--border)">${valid} geçerli / ${total} toplam kayıt</div>
-     <div class="excel-preview">${html}</div>`;
-  document.getElementById('btnTopluArea').style.display = valid > 0 ? 'block' : 'none';
-  document.getElementById('btnTopluGiris').style.display = topluTip==='giris' ? 'block' : 'none';
-  document.getElementById('btnTopluCikis').style.display = topluTip==='cikis' ? 'block' : 'none';
+  html += '</div></div>';
+  const gecerli = topluData.filter(d=>d.found).length;
+  document.getElementById('onizleme').innerHTML = `<div class="prev-count">${gecerli} geçerli / ${topluData.length} toplam kayıt</div>` + html;
+  const ok = gecerli > 0;
+  document.getElementById('btnTopluGiris').style.display = ok&&topluTip==='giris' ? 'block' : 'none';
+  document.getElementById('btnTopluCikis').style.display = ok&&topluTip==='cikis' ? 'block' : 'none';
 }
 
-async function topluIslem(tip) {
-  const validItems = excelData.filter(d=>d.found);
-  if(validItems.length === 0) { showToast('Geçerli kayıt yok', 'error'); return; }
-  showToast('İşleniyor... (0/' + validItems.length + ')', '');
-  let basarili = 0;
-  for(const item of validItems) {
+async function topluUygula(tip) {
+  const liste = topluData.filter(d=>d.found);
+  if(!liste.length) { toast('Geçerli kayıt yok!', 'err'); return; }
+  toast('İşleniyor...', '');
+  let ok=0;
+  for(const d of liste) {
     try {
-      // Not metnini zenginleştir
-      let detay = tip === 'giris' ? 'Toplu Giriş' : 'Toplu Çıkış';
-      if(item.tedarikci) detay += ' | Tedarikçi: ' + item.tedarikci;
-      if(item.irsaliye)  detay += ' | İrsaliye: '  + item.irsaliye;
-      if(item.uretimNo)  detay += ' | İş Emri: '   + item.uretimNo;
-      if(item.uretimAdi) detay += ' | Ürün: '       + item.uretimAdi;
-      if(item.not)       detay += ' | '              + item.not;
-
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: tip, sku: item.sku, miktar: item.miktar, operator: opName, not: detay })
-      });
-      const json = await res.json();
-      if(json.success) {
-        const d = allData.find(i => String(i.SKU_Kodu) === String(item.sku));
-        if(d) d.Mevcut_Stok = json.yeniStok;
-        basarili++;
-        if(basarili % 5 === 0) showToast('İşleniyor... (' + basarili + '/' + validItems.length + ')', '');
+      const found = allData.find(it => getAllCodes(it).some(c => normSku(c)===d.sku.toLowerCase()));
+      const rsku = found ? (found['SKU Kodu']||found.sku||d.sku) : d.sku;
+      let not = tip==='giris' ? 'Toplu Giriş' : 'Toplu Çıkış';
+      if(d.ex.tedarikci) not += ' | Tedarikçi: '+d.ex.tedarikci;
+      if(d.ex.irsaliye)  not += ' | İrsaliye: '+d.ex.irsaliye;
+      if(d.ex.uretimNo)  not += ' | Üretim No: '+d.ex.uretimNo;
+      if(d.ex.urunAdi)   not += ' | Ürün: '+d.ex.urunAdi;
+      if(d.ex.sebep)     not += ' | Sebep: '+d.ex.sebep;
+      const r = await fetch(API, {method:'POST', body:JSON.stringify({action:tip,sku:rsku,miktar:d.miktar,operator,not})});
+      const j = await r.json();
+      if(j.success) {
+        if(found) { if(found['Mevcut Stok']!==undefined) found['Mevcut Stok']=j.yeniStok; else found.stok=j.yeniStok; }
+        ok++;
       }
     } catch(e) {}
   }
-  const isimTR = tip === 'giris' ? 'giriş' : 'çıkış';
-  showToast('✓ ' + basarili + '/' + validItems.length + ' ' + isimTR + ' kaydedildi', 'success');
-  document.getElementById('excelPreview').innerHTML = '';
-  document.getElementById('btnTopluArea').style.display = 'none';
+  const isimTR = tip==='giris' ? 'giriş' : 'çıkış';
+  toast(`✓ ${ok}/${liste.length} ${isimTR} kaydedildi`, 'ok');
+  document.getElementById('onizleme').innerHTML = '';
+  document.getElementById('btnTopluGiris').style.display = 'none';
+  document.getElementById('btnTopluCikis').style.display = 'none';
   document.getElementById('fileInput').value = '';
-  excelData = [];
+  topluData = [];
+}
+
+// ── UYARILAR ──
+function uyarilariYukle() {
+  const kritik = allData.filter(i => Number(i['Mevcut Stok']||i.stok||0)===0);
+  const uyari  = allData.filter(i => { const m=Number(i['Mevcut Stok']||i.stok||0); const mn=Number(i['Minimum Stok']||i.min_stok||0); return m>0&&m<mn; });
+  const normal = allData.length - kritik.length - uyari.length;
+
+  document.getElementById('ozetArea').innerHTML = `
+    <div class="ozet-grid">
+      <div class="ozet-cell" style="background:var(--danger-bg);border:1px solid #e57373">
+        <div class="ozet-num" style="color:var(--danger)">${kritik.length}</div>
+        <div class="ozet-lbl" style="color:var(--danger)">Kritik</div>
+      </div>
+      <div class="ozet-cell" style="background:var(--warn-bg);border:1px solid #f0c040">
+        <div class="ozet-num" style="color:var(--warn)">${uyari.length}</div>
+        <div class="ozet-lbl" style="color:var(--warn)">Uyarı</div>
+      </div>
+      <div class="ozet-cell" style="background:var(--ok-bg);border:1px solid #81c784">
+        <div class="ozet-num" style="color:var(--ok)">${normal}</div>
+        <div class="ozet-lbl" style="color:var(--ok)">Normal</div>
+      </div>
+    </div>`;
+
+  if(!kritik.length && !uyari.length) {
+    document.getElementById('uyariListesi').innerHTML = '<div class="empty"><div class="empty-icon">✓</div><div class="empty-txt">Tüm stoklar normal seviyede</div></div>';
+    return;
+  }
+  let html = '';
+  if(kritik.length) {
+    html += `<div class="sec-title" style="color:var(--danger)">Kritik — Stok Sıfır (${kritik.length})</div>`;
+    kritik.forEach(i => {
+      const sku=i['SKU Kodu']||i.sku||'';
+      const acik=i['Kalem Açıklaması']||i.aciklama||'';
+      const mn=Number(i['Minimum Stok']||i.min_stok||0);
+      const birim=i['Ölçü Birimi']||i.birim||'';
+      html += `<div class="warn-item crit"><div class="warn-name">${acik}</div><div class="warn-sku">${sku}</div><div class="warn-stok" style="color:var(--danger)">Stok: 0 · Min: ${mn} ${birim}</div></div>`;
+    });
+  }
+  if(uyari.length) {
+    html += `<div class="sec-title" style="color:var(--warn)">Uyarı — Minimum Altı (${uyari.length})</div>`;
+    uyari.forEach(i => {
+      const sku=i['SKU Kodu']||i.sku||'';
+      const acik=i['Kalem Açıklaması']||i.aciklama||'';
+      const m=Number(i['Mevcut Stok']||i.stok||0);
+      const mn=Number(i['Minimum Stok']||i.min_stok||0);
+      const birim=i['Ölçü Birimi']||i.birim||'';
+      html += `<div class="warn-item warn"><div class="warn-name">${acik}</div><div class="warn-sku">${sku}</div><div class="warn-stok" style="color:var(--warn)">Stok: ${m.toLocaleString()} · Min: ${mn} ${birim}</div></div>`;
+    });
+  }
+  document.getElementById('uyariListesi').innerHTML = html;
 }
 
 // ── RAPOR İNDİR ──
 function raporIndir(tip) {
-  if(!allData || allData.length === 0) { showToast('Veri yüklenemedi!', 'error'); return; }
-
-  let liste = allData;
-  let dosyaAdi = 'Stok_Raporu_' + new Date().toLocaleDateString('tr-TR').replace(/\./g,'-') + '.xlsx';
-
-  if(tip === 'kritik') {
-    // Sadece minimum stok altı ve sıfır olanlar
-    liste = allData.filter(i => {
-      const m = Number(i['Mevcut Stok']||i.mevcut_stok||0);
-      const min = Number(i['Minimum Stok']||i.minimum_stok||0);
-      return m < min;
-    });
-    dosyaAdi = 'Siparis_Listesi_' + new Date().toLocaleDateString('tr-TR').replace(/\./g,'-') + '.xlsx';
-    if(liste.length === 0) { showToast('Sipariş gerektiren kalem yok!', 'success'); return; }
-  }
-
-  // Excel oluştur
-  const wb = XLSX.utils.book_new();
-  const rows = [
-    ['SKU Kodu', 'Kalem Açıklaması', 'Tedarikçi -1', 'Tedarikçi -2', 
-     'Depo Kodu -1', 'Depo Kodu -2', 'MST-1 KOD', 'MST-2 KOD', 
-     'ELS-1 KOD', 'ELS-2 KOD', 'Malzeme Tipi', 'Ölçü Birimi', 
-     'Birim Ağırlık (Gram)', 'Raf / Lokasyon', 'Mevcut Stok', 'Minimum Stok', 'Durum']
-  ];
-
+  let liste = tip==='siparis'
+    ? allData.filter(i => Number(i['Mevcut Stok']||i.stok||0) < Number(i['Minimum Stok']||i.min_stok||0))
+    : allData;
+  if(!liste.length) { toast('Sipariş gerektiren kalem yok!', 'ok'); return; }
+  const rows = [['SKU Kodu','Kalem Açıklaması','Tedarikçi -1','Tedarikçi -2','Depo Kodu -1','Depo Kodu -2','Malzeme Tipi','Ölçü Birimi','Birim Ağırlık (gr)','Raf / Lokasyon','Mevcut Stok','Minimum Stok','Durum']];
   liste.forEach(i => {
-    const m = Number(i['Mevcut Stok']||i.mevcut_stok||0);
-    const min = Number(i['Minimum Stok']||i.minimum_stok||0);
-    const durum = m === 0 ? 'KRİTİK' : m < min ? 'UYARI' : 'NORMAL';
+    const m=Number(i['Mevcut Stok']||i.stok||0);
+    const mn=Number(i['Minimum Stok']||i.min_stok||0);
     rows.push([
       i['SKU Kodu']||i.sku||'',
       i['Kalem Açıklaması']||i.aciklama||'',
       i['Tedarikçi -1']||i.tedarikci1||'',
       i['Tedarikçi -2']||i.tedarikci2||'',
-      i['Depo Kodu -1 ']||i['Depo Kodu -1']||i.depo_kodu1||'',
-      i['Depo Kodu -2']||i.depo_kodu2||'',
-      i['MST-1 KOD']||i.mst1||'',
-      i['MST-2 KOD']||i.mst2||'',
-      i['ELS-1 KOD']||i.els1||'',
-      i['ELS-2 KOD']||i.els2||'',
-      i['Malzeme Tipi']||i.malzeme_tipi||'',
-      i['Ölçü Birimi']||i.olcu_birimi||'',
-      i['Birim Ağırlık ( Gram)']||i.birim_agirlik||0,
-      i['Raf / Lokasyon']||i.raf||'',
-      m, min, durum
+      i['Depo Kodu -1']||i['Depo Kodu -1 ']||i.depo1||'',
+      i['Depo Kodu -2']||i.depo2||'',
+      i['Malzeme Tipi']||i.tip||'',
+      i['Ölçü Birimi']||i.birim||'',
+      i['Birim Ağırlık']||i['Birim Ağırlık ( Gram)']||i.agirlik||0,
+      i['Raf / Lokasyon']||i['Raf']||i.raf||'',
+      m, mn,
+      m===0?'KRİTİK':m<mn?'UYARI':'NORMAL'
     ]);
   });
-
+  const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(rows);
-
-  // Kolon genişlikleri
-  ws['!cols'] = [
-    {wch:18},{wch:40},{wch:16},{wch:16},
-    {wch:16},{wch:16},{wch:16},{wch:16},
-    {wch:18},{wch:18},{wch:14},{wch:10},
-    {wch:14},{wch:12},{wch:12},{wch:12},{wch:10}
-  ];
-
-  XLSX.utils.book_append_sheet(wb, ws, tip === 'kritik' ? 'Siparis_Listesi' : 'Tum_Stok');
-  XLSX.writeFile(wb, dosyaAdi);
-  showToast('✓ ' + dosyaAdi + ' indirildi!', 'success');
-}
-
-// ── UYARILAR ──
-function loadUyarilar() {
-  const kritik = allData.filter(i => Number(i.Mevcut_Stok) === 0);
-  const uyari = allData.filter(i => Number(i.Mevcut_Stok) > 0 && Number(i.Mevcut_Stok) < Number(i.Minimum_Stok));
-  const area = document.getElementById('uyariArea');
-  if(kritik.length === 0 && uyari.length === 0) {
-    area.innerHTML = '<div class="empty-state"><div class="empty-icon">✓</div><div class="empty-text">Tüm stoklar normal seviyede</div></div>';
-    return;
-  }
-  let html = '';
-  if(kritik.length > 0) {
-    html += `<div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--danger);margin-bottom:8px;padding:0 2px">Kritik — Stok Sıfır (${kritik.length})</div>`;
-    kritik.forEach(i => {
-      html += `<div class="warn-card" style="background:var(--danger-bg);border-color:#e57373">
-        <div class="warn-card-title" style="color:var(--danger)">${i.Kalem_Aciklamasi}</div>
-        <div class="warn-card-sku">${i.SKU_Kodu} · Raf: ${i.Raf}</div>
-        <div class="warn-card-stocks" style="color:var(--danger)">Stok: 0 · Min: ${i.Minimum_Stok} ${i.Olcu_Birimi}</div>
-      </div>`;
-    });
-  }
-  if(uyari.length > 0) {
-    html += `<div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--warn);margin:${kritik.length>0?'16px':0} 0 8px;padding:0 2px">Uyarı — Minimum Altı (${uyari.length})</div>`;
-    uyari.forEach(i => {
-      html += `<div class="warn-card">
-        <div class="warn-card-title">${i.Kalem_Aciklamasi}</div>
-        <div class="warn-card-sku">${i.SKU_Kodu} · Raf: ${i.Raf}</div>
-        <div class="warn-card-stocks">Stok: ${Number(i.Mevcut_Stok).toLocaleString()} · Min: ${i.Minimum_Stok} ${i.Olcu_Birimi}</div>
-      </div>`;
-    });
-  }
-  area.innerHTML = bannerHtml + html;
+  ws['!cols'] = [{wch:18},{wch:40},{wch:14},{wch:14},{wch:14},{wch:14},{wch:12},{wch:10},{wch:12},{wch:12},{wch:10},{wch:10},{wch:8}];
+  XLSX.utils.book_append_sheet(wb, ws, tip==='siparis'?'Siparis_Listesi':'Tum_Stok');
+  const fn = (tip==='siparis'?'Siparis_Listesi':'Stok_Raporu') + '_' + new Date().toLocaleDateString('tr-TR').replace(/\./g,'-') + '.xlsx';
+  XLSX.writeFile(wb, fn);
+  toast('✓ ' + fn + ' indirildi!', 'ok');
 }
 
 // ── TOAST ──
-let toastTimer;
-function showToast(msg, type) {
+let toastT;
+function toast(msg, tip='') {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = 'toast show' + (type ? ' ' + type : '');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  t.className = 'toast show' + (tip?' '+tip:'');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove('show'), 3000);
 }
 </script>
 </body>
