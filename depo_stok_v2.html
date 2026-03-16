@@ -532,13 +532,16 @@ function showCard(item) {
       </div>
       <div class="detail-list">
         <div class="dl-row"><span class="dl-lbl">SKU Kodu</span><span class="dl-val mono">${_sku}</span></div>
-        <div class="dl-row"><span class="dl-lbl">Depo Kodu</span><span class="dl-val mono">${depo}</span></div>
+        <div class="dl-row"><span class="dl-lbl">Kalem Açıklaması</span><span class="dl-val">${_acik}</span></div>
+        <div class="dl-row"><span class="dl-lbl">Tedarikçi</span><span class="dl-val">${ted || '—'}</span></div>
+        <div class="dl-row"><span class="dl-lbl">Depo Kodu</span><span class="dl-val mono">${depo || '—'}</span></div>
         ${mst ? `<div class="dl-row"><span class="dl-lbl">MST Kodu</span><span class="dl-val mono">${mst}</span></div>` : ''}
         ${els ? `<div class="dl-row"><span class="dl-lbl">ELS Kodu</span><span class="dl-val mono">${els}</span></div>` : ''}
-        <div class="dl-row"><span class="dl-lbl">Kategori</span><span class="dl-val">${_tip}</span></div>
-        <div class="dl-row"><span class="dl-lbl">Raf</span><span class="dl-val">${_raf}</span></div>
-        <div class="dl-row"><span class="dl-lbl">Birim ağırlık</span><span class="dl-val">${_agir} gr / ${_birim||item.olcu_birimi}</span></div>
-        <div class="dl-row"><span class="dl-lbl">Tedarikçi</span><span class="dl-val">${ted}</span></div>
+        <div class="dl-row"><span class="dl-lbl">Malzeme Tipi</span><span class="dl-val">${_tip || '—'}</span></div>
+        <div class="dl-row"><span class="dl-lbl">Ölçü Birimi</span><span class="dl-val">${_birim || '—'}</span></div>
+        <div class="dl-row"><span class="dl-lbl">Birim Ağırlık</span><span class="dl-val">${_agir} gr</span></div>
+        <div class="dl-row"><span class="dl-lbl">Raf / Lokasyon</span><span class="dl-val">${_raf || '—'}</span></div>
+        <div class="dl-row"><span class="dl-lbl">Minimum Stok</span><span class="dl-val">${_min} ${_birim || ''}</span></div>
       </div>
     </div>
     ${wSec}`;
@@ -607,7 +610,14 @@ function skuAra() {
 
 // ── STOK GİRİŞ ──
 async function stokGiris() {
-  const sku = document.getElementById('hareketSku').dataset.resolvedSku || document.getElementById('hareketSku').value.trim();
+  // SKU'yu bul - resolvedSku varsa kullan, yoksa inputtan ara
+  const _inputVal = document.getElementById('hareketSku').value.trim();
+  const _resolved = document.getElementById('hareketSku').dataset.resolvedSku || '';
+  const _foundItem = allData.find(i => {
+    const codes = getAllCodes(i);
+    return codes.some(f => String(f).toLowerCase() === _inputVal.toLowerCase());
+  });
+  const sku = _resolved || (_foundItem ? String(_foundItem['SKU Kodu']||_foundItem.sku||'') : _inputVal);
   const miktar = parseFloat(document.getElementById('hareketMiktar').value);
   const tur = document.getElementById('islemTuru').value;
   const tedarikci = document.getElementById('girisTedarikci').value.trim();
@@ -652,7 +662,14 @@ async function stokGiris() {
 
 // ── STOK ÇIKIŞ ──
 async function stokCikis() {
-  const sku = document.getElementById('hareketSku').dataset.resolvedSku || document.getElementById('hareketSku').value.trim();
+  // SKU'yu bul - resolvedSku varsa kullan, yoksa inputtan ara
+  const _inputVal2 = document.getElementById('hareketSku').value.trim();
+  const _resolved2 = document.getElementById('hareketSku').dataset.resolvedSku || '';
+  const _foundItem2 = allData.find(i => {
+    const codes = getAllCodes(i);
+    return codes.some(f => String(f).toLowerCase() === _inputVal2.toLowerCase());
+  });
+  const sku = _resolved2 || (_foundItem2 ? String(_foundItem2['SKU Kodu']||_foundItem2.sku||'') : _inputVal2);
   const miktar = parseFloat(document.getElementById('hareketMiktar').value);
   const tur = document.getElementById('islemTuru').value;
   const not = document.getElementById('hareketNot').value.trim();
