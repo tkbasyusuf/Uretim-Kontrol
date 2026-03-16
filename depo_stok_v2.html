@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Depo Stok Yönetimi</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #f4f3ef; --card: #ffffff; --border: #e2e0d8;
+    --text: #1a1916; --muted: #7a7870; --accent: #1a1916;
+    --ok: #2d6a4f; --ok-bg: #d8f3dc;
+    --warn: #7d4e00; --warn-bg: #ffe8a1;
+    --danger: #9b1c1c; --danger-bg: #fde8e8;
+    --radius: 14px; --font: 'Georgia', serif; --mono: 'Courier New', monospace;
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; }
+  #screen1.active { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem 1.5rem; }
+  #screen2.active, #screen3.active, #screen4.active { display: block; }
+
+  /* ── LOGIN ── */
+  .logo-wrap { text-align: center; margin-bottom: 3rem; }
+  .logo-wrap h1 { font-size: 2rem; font-weight: normal; letter-spacing: -0.5px; }
+  .logo-wrap p { font-size: 0.9rem; color: var(--muted); margin-top: 6px; font-style: italic; }
+  .login-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; width: 100%; max-width: 380px; }
+  .login-card label { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 8px; }
+  .big-input { width: 100%; padding: 14px 16px; font-size: 1.1rem; font-family: var(--font); border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); margin-bottom: 16px; outline: none; }
+  .big-input:focus { border-color: var(--accent); }
+  .btn-primary { width: 100%; padding: 15px; font-size: 1rem; font-family: var(--font); background: var(--accent); color: #fff; border: none; border-radius: 10px; cursor: pointer; }
+  .btn-primary:active { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── TOP BAR ── */
+  .top-bar { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 10; }
+  .app-title { font-size: 1rem; font-weight: normal; flex: 1; }
+  .op-tag { font-size: 0.75rem; color: var(--muted); font-style: italic; }
+  .btn-sm { padding: 6px 12px; font-size: 0.75rem; font-family: var(--font); border: 1px solid var(--border); border-radius: 8px; background: transparent; cursor: pointer; color: var(--muted); }
+
+  /* ── NAV TABS ── */
+  .nav-tabs { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--card); border-bottom: 1px solid var(--border); }
+  .nav-tab { padding: 12px 8px; text-align: center; font-size: 0.78rem; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; font-family: var(--font); background: none; border-top: none; border-left: none; border-right: none; }
+  .nav-tab.active { color: var(--text); border-bottom-color: var(--text); }
+
+  /* ── CONTENT ── */
+  .content { padding: 16px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── SEARCH ── */
+  .search-wrap { position: relative; margin-bottom: 12px; }
+  .search-wrap input { width: 100%; padding: 14px 42px 14px 16px; font-size: 1rem; font-family: var(--font); border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); outline: none; }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .clear-x { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--muted); display: none; }
+  .suggestions { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 12px; display: none; }
+  .sug-item { padding: 13px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .sug-item:last-child { border-bottom: none; }
+  .sug-item:active { background: var(--bg); }
+  .sug-name { font-size: 0.88rem; color: var(--text); line-height: 1.4; }
+  .sug-sku { font-size: 0.72rem; font-family: var(--mono); color: var(--muted); margin-top: 2px; }
+
+  /* ── RESULT CARD ── */
+  .result-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
+  .rc-head { padding: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .rc-name { font-size: 0.93rem; line-height: 1.5; flex: 1; }
+  .status-pill { flex-shrink: 0; padding: 4px 12px; border-radius: 20px; font-size: 0.73rem; font-weight: bold; }
+  .pill-ok { background: var(--ok-bg); color: var(--ok); }
+  .pill-warn { background: var(--warn-bg); color: var(--warn); }
+  .pill-danger { background: var(--danger-bg); color: var(--danger); }
+  .stock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
+  .stock-cell { background: var(--card); padding: 14px; text-align: center; }
+  .stock-lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 4px; }
+  .stock-val { font-size: 1.9rem; font-weight: normal; color: var(--text); line-height: 1; }
+  .stock-unit { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
+  .detail-list { padding: 0 16px; }
+  .dl-row { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 12px; font-size: 0.88rem; }
+  .dl-row:last-child { border-bottom: none; }
+  .dl-lbl { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); white-space: nowrap; }
+  .dl-val { color: var(--text); text-align: right; word-break: break-word; }
+  .dl-val.mono { font-family: var(--mono); font-size: 0.78rem; }
+
+  /* ── WEIGHT CALC ── */
+  .weight-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
+  .wc-head { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+  .wc-body { padding: 16px; }
+  .wc-row { display: flex; gap: 10px; align-items: center; }
+  .wc-input { flex: 1; padding: 12px 14px; font-size: 1rem; font-family: var(--font); border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); outline: none; }
+  .wc-result { margin-top: 12px; padding: 14px; background: var(--bg); border-radius: 10px; text-align: center; display: none; }
+  .wc-result-val { font-size: 1.7rem; color: var(--text); }
+  .wc-result-lbl { font-size: 0.72rem; color: var(--muted); margin-top: 3px; font-style: italic; }
+
+  /* ── FORM (Giriş/Çıkış) ── */
+  .form-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 14px; }
+  .form-card h3 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 1rem; font-weight: normal; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 6px; }
+  .form-group input, .form-group select { width: 100%; padding: 12px 14px; font-size: 0.95rem; font-family: var(--font); border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); outline: none; }
+  .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .btn-giris { width: 100%; padding: 14px; font-size: 0.95rem; font-family: var(--font); background: var(--ok-bg); color: var(--ok); border: 1px solid var(--ok); border-radius: 10px; cursor: pointer; font-weight: bold; }
+  .btn-cikis { width: 100%; padding: 14px; font-size: 0.95rem; font-family: var(--font); background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+  .btn-giris:active, .btn-cikis:active { opacity: 0.8; }
+  .btn-giris:disabled, .btn-cikis:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── HAREKETLER LİSTESİ ── */
+  .hareket-item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+  .hareket-badge { flex-shrink: 0; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; }
+  .badge-giris { background: var(--ok-bg); color: var(--ok); }
+  .badge-cikis { background: var(--danger-bg); color: var(--danger); }
+  .hareket-info { flex: 1; }
+  .hareket-aciklama { font-size: 0.82rem; color: var(--text); line-height: 1.3; }
+  .hareket-meta { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+  .hareket-miktar { font-size: 1rem; font-weight: normal; color: var(--text); white-space: nowrap; }
+
+  /* ── UYARI KARTI ── */
+  .warn-card { background: var(--warn-bg); border: 1px solid #f0c040; border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; }
+  .warn-card-title { font-size: 0.78rem; font-weight: bold; color: var(--warn); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .warn-card-sku { font-size: 0.72rem; font-family: var(--mono); color: var(--muted); }
+  .warn-card-stocks { font-size: 0.82rem; color: var(--warn); margin-top: 4px; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+  .empty-icon { font-size: 2.2rem; margin-bottom: 10px; }
+  .empty-text { font-size: 0.9rem; font-style: italic; }
+
+  /* ── TOAST ── */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 0.88rem; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+  .toast.error { background: var(--danger); }
+  .toast.success { background: var(--ok); }
+
+  /* ── LOADING ── */
+  .loading { text-align: center; padding: 2rem; color: var(--muted); font-style: italic; font-size: 0.9rem; }
+
+  /* ── EXCEL YÜKLEME ── */
+  .upload-area { border: 2px dashed var(--border); border-radius: var(--radius); padding: 2rem; text-align: center; cursor: pointer; margin-bottom: 14px; }
+  .upload-area:hover { border-color: var(--accent); }
+  .upload-icon { font-size: 2rem; margin-bottom: 8px; }
+  .upload-text { font-size: 0.88rem; color: var(--muted); font-style: italic; }
+  #fileInput { display: none; }
+  .excel-preview { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .excel-row { display: flex; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 0.83rem; }
+  .excel-row:last-child { border-bottom: none; }
+  .excel-row .sku { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+  .excel-row .miktar { font-weight: bold; color: var(--danger); }
+  .excel-row.err { background: var(--danger-bg); }
+  .excel-row.err .sku { color: var(--danger); }
+</style>
+</head>
+<body>
+
+<!-- ── EKRAN 1: GİRİŞ ── -->
+<div class="screen" id="screen1">
+  <div class="logo-wrap">
+    <h1>Depo Stok</h1>
+    <p>Hammadde yönetim sistemi</p>
+  </div>
+  <div class="login-card">
+    <label for="opInput">Operatör adı</label>
+    <input type="text" class="big-input" id="opInput" placeholder="Adınızı girin..." autocomplete="off" />
+    <button class="btn-primary" id="loginBtn" onclick="startSession()">Giriş</button>
+    <div id="loginMsg" style="text-align:center;font-size:0.82rem;margin-top:10px;display:none"></div>
+  </div>
+</div>
+
+<!-- ── EKRAN 2: ANA UYGULAMA ── -->
+<div class="screen" id="screen2">
+  <div class="top-bar">
+    <span class="app-title">Depo Stok</span>
+    <span class="op-tag" id="opTag"></span>
+    <button class="btn-sm" onclick="changeOp()">Çıkış</button>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showTab('sorgula')">Sorgula</button>
+    <button class="nav-tab" onclick="showTab('hareket')">Giriş / Çıkış</button>
+    <button class="nav-tab" onclick="showTab('uyarilar')">Uyarılar</button>
+  </div>
+
+  <div class="content">
+
+    <!-- SORGULA -->
+    <div class="tab-panel active" id="tab-sorgula">
+      <div class="search-wrap">
+        <input type="text" id="searchInput" placeholder="SKU kodu girin..." autocomplete="off"
+          oninput="onSearch()" onkeydown="onKey(event)" />
+        <button class="clear-x" id="clearBtn" onclick="clearSearch()">✕</button>
+      </div>
+      <div class="suggestions" id="suggestions"></div>
+      <div id="resultArea">
+        <div class="empty-state">
+          <div class="empty-icon">🔎</div>
+          <div class="empty-text">SKU kodu girerek malzeme bilgisine ulaşın</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GİRİŞ / ÇIKIŞ -->
+    <div class="tab-panel" id="tab-hareket">
+      <div class="form-card">
+        <h3>Stok Hareketi</h3>
+
+        <div class="form-group">
+          <label>SKU Kodu</label>
+          <input type="text" id="hareketSku" placeholder="SKU kodu girin..." autocomplete="off"
+            oninput="skuAra()" />
+        </div>
+        <div id="hareketSkuInfo" style="display:none;font-size:0.82rem;color:var(--muted);margin:-8px 0 12px;padding:0 4px;font-style:italic;"></div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Miktar</label>
+            <input type="number" id="hareketMiktar" placeholder="0" min="1" />
+          </div>
+          <div class="form-group">
+            <label>Not (opsiyonel)</label>
+            <input type="text" id="hareketNot" placeholder="..." />
+          </div>
+        </div>
+
+        <button class="btn-giris" id="btnGiris" onclick="stokGiris()" disabled>+ Stok Girişi</button>
+        <button class="btn-cikis" id="btnCikis" onclick="stokCikis()" disabled>− Stok Çıkışı</button>
+      </div>
+
+      <!-- Toplu Excel Çıkışı -->
+      <div class="form-card">
+        <h3>Toplu Stok Çıkışı (Excel)</h3>
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+          <div class="upload-icon">📄</div>
+          <div class="upload-text">Excel dosyası seç (.xlsx veya .csv)<br><small>Sütunlar: SKU_Kodu, Miktar</small></div>
+        </div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFile(event)" />
+        <div id="excelPreview"></div>
+        <div id="btnTopluArea" style="display:none">
+          <button class="btn-cikis" onclick="topluCikis()">Toplu Çıkış Uygula</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- UYARILAR -->
+    <div class="tab-panel" id="tab-uyarilar">
+      <div id="uyariArea">
+        <div class="loading">Yükleniyor...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── AYARLAR ──
+const API_URL = 'https://script.google.com/macros/s/AKfycbycpVfNGhJFeamAFYQ1UMmwRn_LFpLKCc4LgMSWEGsslMLHD3TyxJoGVmvOtDEfFccWrw/exec';
+
+// ── STATE ──
+let opName = '';
+let allData = [];
+let currentItem = null;
+let excelData = [];
+
+// ── BAŞLANGIÇ ──
+window.onload = function() {
+  document.getElementById('screen1').classList.add('active');
+  document.getElementById('opInput').addEventListener('keydown', e => { if(e.key==='Enter') startSession(); });
+  document.getElementById('hareketSku').addEventListener('keydown', e => { if(e.key==='Enter') skuAra(); });
+};
+
+// ── GİRİŞ ──
+async function startSession() {
+  const val = document.getElementById('opInput').value.trim();
+  if(!val) { showMsg('loginMsg', 'Lütfen adınızı girin.', 'red'); return; }
+  
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.textContent = 'Yükleniyor...';
+  showMsg('loginMsg', 'Veriler yükleniyor...', 'gray');
+  
+  try {
+    const res = await fetch(API_URL + '?action=getAll');
+    const json = await res.json();
+    if(json.success) {
+      allData = json.data;
+      opName = val;
+      document.getElementById('opTag').textContent = opName;
+      document.getElementById('screen1').classList.remove('active');
+      document.getElementById('screen2').classList.add('active');
+      loadUyarilar();
+    } else {
+      showMsg('loginMsg', 'Bağlantı hatası. Tekrar deneyin.', 'red');
+    }
+  } catch(e) {
+    showMsg('loginMsg', 'Sunucuya bağlanılamadı.', 'red');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Giriş';
+}
+
+function showMsg(id, text, color) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  el.style.color = color === 'red' ? 'var(--danger)' : 'var(--muted)';
+  el.textContent = text;
+}
+
+function changeOp() {
+  document.getElementById('screen2').classList.remove('active');
+  document.getElementById('screen1').classList.add('active');
+  document.getElementById('opInput').value = '';
+  clearSearch();
+}
+
+// ── TABS ──
+function showTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  if(tab === 'uyarilar') loadUyarilar();
+}
+
+// ── SORGULA ──
+function status(item) {
+  const m = Number(item.Mevcut_Stok), min = Number(item.Minimum_Stok);
+  return m === 0 ? 'danger' : m < min ? 'warn' : 'ok';
+}
+
+function onSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  document.getElementById('clearBtn').style.display = q ? 'block' : 'none';
+  if(q.length < 2) { hideSugg(); showEmpty(); return; }
+  const hits = allData.filter(i => String(i.SKU_Kodu).toLowerCase().includes(q.toLowerCase())).slice(0,6);
+  if(hits.length === 0) { hideSugg(); showNotFound(); return; }
+  if(hits.length === 1) { hideSugg(); showCard(hits[0]); return; }
+  showSugg(hits);
+}
+
+function onKey(e) {
+  if(e.key === 'Enter') {
+    const q = document.getElementById('searchInput').value.trim();
+    const m = allData.find(i => String(i.SKU_Kodu).toLowerCase() === q.toLowerCase());
+    if(m) { hideSugg(); showCard(m); }
+  }
+}
+
+function showSugg(items) {
+  const el = document.getElementById('suggestions');
+  el.innerHTML = items.map(i => `<div class="sug-item" onclick="pick('${i.SKU_Kodu}')">
+    <div class="sug-name">${i.Kalem_Aciklamasi}</div>
+    <div class="sug-sku">${i.SKU_Kodu}</div>
+  </div>`).join('');
+  el.style.display = 'block';
+  document.getElementById('resultArea').innerHTML = '';
+}
+
+function hideSugg() { document.getElementById('suggestions').style.display = 'none'; }
+
+function pick(sku) {
+  const item = allData.find(i => String(i.SKU_Kodu) === String(sku));
+  document.getElementById('searchInput').value = sku;
+  document.getElementById('clearBtn').style.display = 'block';
+  hideSugg(); showCard(item);
+}
+
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('clearBtn').style.display = 'none';
+  hideSugg(); showEmpty(); currentItem = null;
+}
+
+function showEmpty() {
+  document.getElementById('resultArea').innerHTML = '<div class="empty-state"><div class="empty-icon">🔎</div><div class="empty-text">SKU kodu girerek malzeme bilgisine ulaşın</div></div>';
+}
+
+function showNotFound() {
+  document.getElementById('resultArea').innerHTML = '<div class="empty-state"><div class="empty-icon">—</div><div class="empty-text">Bu SKU kodu bulunamadı</div></div>';
+}
+
+function showCard(item) {
+  currentItem = item;
+  const s = status(item);
+  const pt = s==='danger' ? 'Kritik' : s==='warn' ? 'Uyarı' : 'Normal';
+  const depo = [item.Depo_Kodu_1, item.Depo_Kodu_2].filter(Boolean).join(' / ') || '—';
+  const ted = [item.Tedarikci_1, item.Tedarikci_2].filter(Boolean).join(' / ') || '—';
+  const wSec = item.Birim_Agirlik > 0 ? `
+    <div class="weight-card">
+      <div class="wc-head">Ağırlık bazlı sayım</div>
+      <div class="wc-body">
+        <div class="wc-row">
+          <input class="wc-input" type="number" placeholder="Toplam ağırlık (gram)" id="wIn" oninput="calcW()" />
+          <span style="font-size:0.82rem;color:var(--muted);white-space:nowrap">gram</span>
+        </div>
+        <div class="wc-result" id="wRes"></div>
+      </div>
+    </div>` : '';
+  document.getElementById('resultArea').innerHTML = `
+    <div class="result-card">
+      <div class="rc-head">
+        <div class="rc-name">${item.Kalem_Aciklamasi}</div>
+        <span class="status-pill pill-${s}">${pt}</span>
+      </div>
+      <div class="stock-grid">
+        <div class="stock-cell">
+          <div class="stock-lbl">Mevcut stok</div>
+          <div class="stock-val">${Number(item.Mevcut_Stok).toLocaleString()}</div>
+          <div class="stock-unit">${item.Olcu_Birimi}</div>
+        </div>
+        <div class="stock-cell">
+          <div class="stock-lbl">Minimum stok</div>
+          <div class="stock-val">${item.Minimum_Stok}</div>
+          <div class="stock-unit">${item.Olcu_Birimi}</div>
+        </div>
+      </div>
+      <div class="detail-list">
+        <div class="dl-row"><span class="dl-lbl">SKU Kodu</span><span class="dl-val mono">${item.SKU_Kodu}</span></div>
+        <div class="dl-row"><span class="dl-lbl">Depo Kodu</span><span class="dl-val mono">${depo}</span></div>
+        <div class="dl-row"><span class="dl-lbl">Kategori</span><span class="dl-val">${item.Malzeme_Tipi}</span></div>
+        <div class="dl-row"><span class="dl-lbl">Raf</span><span class="dl-val">${item.Raf}</span></div>
+        <div class="dl-row"><span class="dl-lbl">Birim ağırlık</span><span class="dl-val">${item.Birim_Agirlik} gr / ${item.Olcu_Birimi}</span></div>
+        <div class="dl-row"><span class="dl-lbl">Tedarikçi</span><span class="dl-val">${ted}</span></div>
+      </div>
+    </div>
+    ${wSec}`;
+}
+
+function calcW() {
+  if(!currentItem) return;
+  const tw = parseFloat(document.getElementById('wIn').value);
+  const res = document.getElementById('wRes');
+  if(!tw||tw<=0){res.style.display='none';return;}
+  const qty = Math.round(tw / currentItem.Birim_Agirlik);
+  res.innerHTML = `<div class="wc-result-val">${qty.toLocaleString()} ${currentItem.Olcu_Birimi}</div><div class="wc-result-lbl">tahmini adet</div>`;
+  res.style.display = 'block';
+}
+
+// ── SKU ARA (Hareket formu) ──
+function skuAra() {
+  const sku = document.getElementById('hareketSku').value.trim();
+  const info = document.getElementById('hareketSkuInfo');
+  const btnG = document.getElementById('btnGiris');
+  const btnC = document.getElementById('btnCikis');
+  if(!sku) { info.style.display='none'; btnG.disabled=true; btnC.disabled=true; return; }
+  const item = allData.find(i => String(i.SKU_Kodu).toLowerCase() === sku.toLowerCase());
+  if(item) {
+    info.style.display = 'block';
+    info.textContent = item.Kalem_Aciklamasi + ' — Mevcut: ' + Number(item.Mevcut_Stok).toLocaleString() + ' ' + item.Olcu_Birimi;
+    btnG.disabled = false;
+    btnC.disabled = false;
+  } else {
+    info.style.display = 'block';
+    info.textContent = 'SKU bulunamadı';
+    info.style.color = 'var(--danger)';
+    btnG.disabled = true;
+    btnC.disabled = true;
+  }
+}
+
+// ── STOK GİRİŞ ──
+async function stokGiris() {
+  const sku = document.getElementById('hareketSku').value.trim();
+  const miktar = parseFloat(document.getElementById('hareketMiktar').value);
+  const not = document.getElementById('hareketNot').value.trim();
+  if(!sku || !miktar || miktar<=0) { showToast('SKU ve miktar zorunlu!', 'error'); return; }
+
+  document.getElementById('btnGiris').disabled = true;
+  document.getElementById('btnGiris').textContent = 'Kaydediliyor...';
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'giris', sku, miktar, operator: opName, not })
+    });
+    const json = await res.json();
+    if(json.success) {
+      // Lokal veriyi güncelle
+      const item = allData.find(i => String(i.SKU_Kodu) === String(sku));
+      if(item) item.Mevcut_Stok = json.yeniStok;
+      showToast('✓ Giriş kaydedildi! Yeni stok: ' + json.yeniStok, 'success');
+      document.getElementById('hareketMiktar').value = '';
+      document.getElementById('hareketNot').value = '';
+      skuAra();
+    } else {
+      showToast(json.error || 'Hata oluştu', 'error');
+    }
+  } catch(e) {
+    showToast('Bağlantı hatası', 'error');
+  }
+  document.getElementById('btnGiris').disabled = false;
+  document.getElementById('btnGiris').textContent = '+ Stok Girişi';
+}
+
+// ── STOK ÇIKIŞ ──
+async function stokCikis() {
+  const sku = document.getElementById('hareketSku').value.trim();
+  const miktar = parseFloat(document.getElementById('hareketMiktar').value);
+  const not = document.getElementById('hareketNot').value.trim();
+  if(!sku || !miktar || miktar<=0) { showToast('SKU ve miktar zorunlu!', 'error'); return; }
+
+  document.getElementById('btnCikis').disabled = true;
+  document.getElementById('btnCikis').textContent = 'Kaydediliyor...';
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'cikis', sku, miktar, operator: opName, not })
+    });
+    const json = await res.json();
+    if(json.success) {
+      const item = allData.find(i => String(i.SKU_Kodu) === String(sku));
+      if(item) item.Mevcut_Stok = json.yeniStok;
+      showToast('✓ Çıkış kaydedildi! Yeni stok: ' + json.yeniStok, 'success');
+      document.getElementById('hareketMiktar').value = '';
+      document.getElementById('hareketNot').value = '';
+      skuAra();
+    } else {
+      showToast(json.error || 'Hata oluştu', 'error');
+    }
+  } catch(e) {
+    showToast('Bağlantı hatası', 'error');
+  }
+  document.getElementById('btnCikis').disabled = false;
+  document.getElementById('btnCikis').textContent = '− Stok Çıkışı';
+}
+
+// ── EXCEL TOPLU ÇIKIŞ ──
+function handleFile(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    const lines = text.split('\n').filter(l => l.trim());
+    excelData = [];
+    const preview = document.getElementById('excelPreview');
+    let html = '';
+    for(let i=1; i<lines.length; i++) {
+      const cols = lines[i].split(',').map(c => c.trim().replace(/"/g,''));
+      if(cols.length < 2) continue;
+      const sku = cols[0];
+      const miktar = parseFloat(cols[1]);
+      if(!sku || isNaN(miktar)) continue;
+      const found = allData.find(it => String(it.SKU_Kodu) === String(sku));
+      const err = !found;
+      excelData.push({sku, miktar, found: !err});
+      html += `<div class="excel-row ${err?'err':''}">
+        <span>${found ? found.Kalem_Aciklamasi.substring(0,40) : 'SKU bulunamadı'}</span>
+        <span class="sku">${sku}</span>
+        <span class="miktar">-${miktar}</span>
+      </div>`;
+    }
+    preview.innerHTML = `<div class="excel-preview">${html}</div>`;
+    document.getElementById('btnTopluArea').style.display = excelData.filter(d=>d.found).length > 0 ? 'block' : 'none';
+  };
+  reader.readAsText(file);
+}
+
+async function topluCikis() {
+  const validItems = excelData.filter(d=>d.found);
+  if(validItems.length === 0) { showToast('Geçerli kayıt yok', 'error'); return; }
+  showToast('İşleniyor...', '');
+  let basarili = 0;
+  for(const item of validItems) {
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'cikis', sku: item.sku, miktar: item.miktar, operator: opName, not: 'Toplu çıkış' })
+      });
+      const json = await res.json();
+      if(json.success) {
+        const d = allData.find(i => String(i.SKU_Kodu) === String(item.sku));
+        if(d) d.Mevcut_Stok = json.yeniStok;
+        basarili++;
+      }
+    } catch(e) {}
+  }
+  showToast(`✓ ${basarili}/${validItems.length} kayıt güncellendi`, 'success');
+  document.getElementById('excelPreview').innerHTML = '';
+  document.getElementById('btnTopluArea').style.display = 'none';
+  document.getElementById('fileInput').value = '';
+  excelData = [];
+}
+
+// ── UYARILAR ──
+function loadUyarilar() {
+  const kritik = allData.filter(i => Number(i.Mevcut_Stok) === 0);
+  const uyari = allData.filter(i => Number(i.Mevcut_Stok) > 0 && Number(i.Mevcut_Stok) < Number(i.Minimum_Stok));
+  const area = document.getElementById('uyariArea');
+  if(kritik.length === 0 && uyari.length === 0) {
+    area.innerHTML = '<div class="empty-state"><div class="empty-icon">✓</div><div class="empty-text">Tüm stoklar normal seviyede</div></div>';
+    return;
+  }
+  let html = '';
+  if(kritik.length > 0) {
+    html += `<div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--danger);margin-bottom:8px;padding:0 2px">Kritik — Stok Sıfır (${kritik.length})</div>`;
+    kritik.forEach(i => {
+      html += `<div class="warn-card" style="background:var(--danger-bg);border-color:#e57373">
+        <div class="warn-card-title" style="color:var(--danger)">${i.Kalem_Aciklamasi}</div>
+        <div class="warn-card-sku">${i.SKU_Kodu} · Raf: ${i.Raf}</div>
+        <div class="warn-card-stocks" style="color:var(--danger)">Stok: 0 · Min: ${i.Minimum_Stok} ${i.Olcu_Birimi}</div>
+      </div>`;
+    });
+  }
+  if(uyari.length > 0) {
+    html += `<div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--warn);margin:${kritik.length>0?'16px':0} 0 8px;padding:0 2px">Uyarı — Minimum Altı (${uyari.length})</div>`;
+    uyari.forEach(i => {
+      html += `<div class="warn-card">
+        <div class="warn-card-title">${i.Kalem_Aciklamasi}</div>
+        <div class="warn-card-sku">${i.SKU_Kodu} · Raf: ${i.Raf}</div>
+        <div class="warn-card-stocks">Stok: ${Number(i.Mevcut_Stok).toLocaleString()} · Min: ${i.Minimum_Stok} ${i.Olcu_Birimi}</div>
+      </div>`;
+    });
+  }
+  area.innerHTML = html;
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
