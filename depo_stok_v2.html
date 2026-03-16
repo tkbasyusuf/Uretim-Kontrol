@@ -283,11 +283,11 @@
           <button id="tabCikisBtn" class="toplu-tab" onclick="setTopluTip('cikis')">📤 Toplu Çıkış</button>
         </div>
 
-        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+        <label for="fileInput" class="upload-area" style="display:block;cursor:pointer">
           <div class="upload-icon">📄</div>
-          <div class="upload-text">Excel dosyası seç (.xlsx veya .csv)<br><small>Sütunlar: SKU_Kodu, Miktar</small></div>
-        </div>
-        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFile(event)" />
+          <div class="upload-text">Buraya tıkla — Excel veya CSV seç<br><small>(.xlsx, .xls veya .csv) · Sütunlar: SKU_Kodu, Miktar</small></div>
+        </label>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFile(event)" style="display:none" />
         <div id="excelPreview"></div>
         <div id="btnTopluArea" style="display:none">
           <button class="btn-giris" id="btnTopluGiris" onclick="topluIslem('giris')" style="display:none">📥 Toplu Girişi Uygula</button>
@@ -309,6 +309,7 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 // ── AYARLAR ──
 const API_URL = 'https://script.google.com/macros/s/AKfycbycpVfNGhJFeamAFYQ1UMmwRn_LFpLKCc4LgMSWEGsslMLHD3TyxJoGVmvOtDEfFccWrw/exec';
@@ -644,23 +645,89 @@ function setTopluTip(tip) {
 function handleFile(event) {
   const file = event.target.files[0];
   if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const text = e.target.result;
-    const lines = text.split('\n').filter(l => l.trim());
-    excelData = [];
-    for(let i=1; i<lines.length; i++) {
-      const cols = lines[i].split(',').map(c => c.trim().replace(/"/g,''));
-      if(cols.length < 2) continue;
-      const sku = cols[0];
-      const miktar = parseFloat(cols[1]);
-      if(!sku || isNaN(miktar)) continue;
-      const found = allData.find(it => String(it.SKU_Kodu) === String(sku));
-      excelData.push({sku, miktar, found: !!found});
+  const ext = file.name.split('.').pop().toLowerCase();
+
+  if(ext === 'csv') {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      parseCSV(e.target.result);
+    };
+    reader.readAsText(file, 'UTF-8');
+  } else if(ext === 'xlsx' || ext === 'xls') {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, {type: 'array'});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+        parseRows(rows);
+      } catch(err) {
+        showToast('Excel okuma hatası: ' + err.message, 'error');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    showToast('Desteklenmeyen dosya tipi. CSV veya Excel yükleyin.', 'error');
+  }
+}
+
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const rows = lines.map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g,'')));
+  parseRows(rows);
+}
+
+function parseRows(rows) {
+  excelData = [];
+  
+  // Başlık satırını bul ve sütun indekslerini belirle
+  let startIdx = 1;
+  let colIdx = {sku:0, miktar:1, tedarikci:2, irsaliye:3, uretimNo:4, uretimAdi:5, not:6};
+  
+  for(let i=0; i<Math.min(3,rows.length); i++) {
+    const r = rows[i];
+    if(!r) continue;
+    const rowStr = r.join('|').toLowerCase();
+    if(rowStr.includes('sku') || rowStr.includes('kod')) {
+      startIdx = i + 1;
+      // Dinamik sütun eşleştirme
+      r.forEach((h, idx) => {
+        const k = String(h).toLowerCase().trim();
+        if(k.includes('sku') || k.includes('kod')) colIdx.sku = idx;
+        else if(k.includes('miktar') || k.includes('adet')) colIdx.miktar = idx;
+        else if(k.includes('tedarik')) colIdx.tedarikci = idx;
+        else if(k.includes('irsaliye') || k.includes('fatura') || k.includes('belge')) colIdx.irsaliye = idx;
+        else if(k.includes('uretim_no') || k.includes('üretim_no') || k.includes('is_emri') || k.includes('iş emri')) colIdx.uretimNo = idx;
+        else if(k.includes('uretim_adi') || k.includes('ürün') || k.includes('urun')) colIdx.uretimAdi = idx;
+        else if(k.includes('not') || k.includes('açıklama') || k.includes('aciklama')) colIdx.not = idx;
+      });
+      break;
     }
-    renderPreview();
-  };
-  reader.readAsText(file);
+  }
+
+  for(let i=startIdx; i<rows.length; i++) {
+    const cols = rows[i];
+    if(!cols || cols.length < 2) continue;
+    const sku = String(cols[colIdx.sku] || '').trim();
+    const miktar = parseFloat(cols[colIdx.miktar]);
+    if(!sku || isNaN(miktar) || miktar <= 0) continue;
+    const found = allData.find(it => String(it.SKU_Kodu).trim() === sku);
+    excelData.push({
+      sku, miktar, found: !!found,
+      tedarikci: String(cols[colIdx.tedarikci] || '').trim(),
+      irsaliye:  String(cols[colIdx.irsaliye]  || '').trim(),
+      uretimNo:  String(cols[colIdx.uretimNo]  || '').trim(),
+      uretimAdi: String(cols[colIdx.uretimAdi] || '').trim(),
+      not:       String(cols[colIdx.not]        || '').trim()
+    });
+  }
+
+  if(excelData.length === 0) {
+    showToast('Dosyada geçerli veri bulunamadı!', 'error');
+    return;
+  }
+  renderPreview();
 }
 
 function renderPreview() {
@@ -668,15 +735,27 @@ function renderPreview() {
   let html = '';
   excelData.forEach(d => {
     const found = allData.find(it => String(it.SKU_Kodu) === String(d.sku));
+    // Ek bilgi satırı
+    let ekBilgi = [];
+    if(d.tedarikci) ekBilgi.push('Tedarikçi: ' + d.tedarikci);
+    if(d.irsaliye)  ekBilgi.push('İrsaliye: ' + d.irsaliye);
+    if(d.uretimNo)  ekBilgi.push('İş Emri: ' + d.uretimNo);
+    if(d.uretimAdi) ekBilgi.push('Ürün: ' + d.uretimAdi);
+    if(d.not)       ekBilgi.push(d.not);
     html += `<div class="excel-row ${!d.found?'err':''}">
-      <span>${d.found && found ? found.Kalem_Aciklamasi.substring(0,40) : 'SKU bulunamadı'}</span>
-      <span class="sku">${d.sku}</span>
-      <span class="miktar" style="color:${topluTip==='giris'?'var(--ok)':'var(--danger)'}">${isim}${d.miktar}</span>
+      <div style="flex:1;min-width:0">
+        <div>${d.found && found ? found.Kalem_Aciklamasi.substring(0,45) : '<span style="color:var(--danger)">SKU bulunamadı</span>'}</div>
+        <div class="sku">${d.sku}${ekBilgi.length ? ' · ' + ekBilgi.join(' · ') : ''}</div>
+      </div>
+      <span class="miktar" style="color:${topluTip==='giris'?'var(--ok)':'var(--danger)'};flex-shrink:0">${isim}${d.miktar}</span>
     </div>`;
   });
-  document.getElementById('excelPreview').innerHTML = `<div class="excel-preview">${html}</div>`;
-  const valid = excelData.filter(d=>d.found).length > 0;
-  document.getElementById('btnTopluArea').style.display = valid ? 'block' : 'none';
+  const valid = excelData.filter(d=>d.found).length;
+  const total = excelData.length;
+  document.getElementById('excelPreview').innerHTML = 
+    `<div style="font-size:0.75rem;color:var(--muted);padding:8px 16px;border-bottom:1px solid var(--border)">${valid} geçerli / ${total} toplam kayıt</div>
+     <div class="excel-preview">${html}</div>`;
+  document.getElementById('btnTopluArea').style.display = valid > 0 ? 'block' : 'none';
   document.getElementById('btnTopluGiris').style.display = topluTip==='giris' ? 'block' : 'none';
   document.getElementById('btnTopluCikis').style.display = topluTip==='cikis' ? 'block' : 'none';
 }
@@ -684,24 +763,33 @@ function renderPreview() {
 async function topluIslem(tip) {
   const validItems = excelData.filter(d=>d.found);
   if(validItems.length === 0) { showToast('Geçerli kayıt yok', 'error'); return; }
-  showToast('İşleniyor...', '');
+  showToast('İşleniyor... (0/' + validItems.length + ')', '');
   let basarili = 0;
   for(const item of validItems) {
     try {
+      // Not metnini zenginleştir
+      let detay = tip === 'giris' ? 'Toplu Giriş' : 'Toplu Çıkış';
+      if(item.tedarikci) detay += ' | Tedarikçi: ' + item.tedarikci;
+      if(item.irsaliye)  detay += ' | İrsaliye: '  + item.irsaliye;
+      if(item.uretimNo)  detay += ' | İş Emri: '   + item.uretimNo;
+      if(item.uretimAdi) detay += ' | Ürün: '       + item.uretimAdi;
+      if(item.not)       detay += ' | '              + item.not;
+
       const res = await fetch(API_URL, {
         method: 'POST',
-        body: JSON.stringify({ action: tip, sku: item.sku, miktar: item.miktar, operator: opName, not: tip==='giris' ? 'Toplu giriş' : 'Toplu çıkış' })
+        body: JSON.stringify({ action: tip, sku: item.sku, miktar: item.miktar, operator: opName, not: detay })
       });
       const json = await res.json();
       if(json.success) {
         const d = allData.find(i => String(i.SKU_Kodu) === String(item.sku));
         if(d) d.Mevcut_Stok = json.yeniStok;
         basarili++;
+        if(basarili % 5 === 0) showToast('İşleniyor... (' + basarili + '/' + validItems.length + ')', '');
       }
     } catch(e) {}
   }
   const isimTR = tip === 'giris' ? 'giriş' : 'çıkış';
-  showToast(`✓ ${basarili}/${validItems.length} ${isimTR} kaydedildi`, 'success');
+  showToast('✓ ' + basarili + '/' + validItems.length + ' ' + isimTR + ' kaydedildi', 'success');
   document.getElementById('excelPreview').innerHTML = '';
   document.getElementById('btnTopluArea').style.display = 'none';
   document.getElementById('fileInput').value = '';
