@@ -186,7 +186,7 @@
     <!-- SORGULA -->
     <div class="tab-panel active" id="tab-sorgula">
       <div class="search-wrap">
-        <input type="text" id="searchInput" placeholder="SKU kodu girin..." autocomplete="off"
+        <input type="text" id="searchInput" placeholder="SKU kodu veya Depo kodu girin..." autocomplete="off"
           oninput="onSearch()" onkeydown="onKey(event)" />
         <button class="clear-x" id="clearBtn" onclick="clearSearch()">✕</button>
       </div>
@@ -206,7 +206,7 @@
 
         <div class="form-group">
           <label>SKU Kodu</label>
-          <input type="text" id="hareketSku" placeholder="SKU kodu girin..." autocomplete="off"
+          <input type="text" id="hareketSku" placeholder="SKU veya depo kodu girin..." autocomplete="off"
             oninput="skuAra()" />
         </div>
         <div id="hareketSkuInfo" style="display:none;font-size:0.82rem;color:var(--muted);margin:-8px 0 12px;padding:0 4px;font-style:italic;"></div>
@@ -387,10 +387,16 @@ function status(item) {
 }
 
 function onSearch() {
-  const q = document.getElementById('searchInput').value.trim();
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
   document.getElementById('clearBtn').style.display = q ? 'block' : 'none';
   if(q.length < 2) { hideSugg(); showEmpty(); return; }
-  const hits = allData.filter(i => String(i.SKU_Kodu).toLowerCase().includes(q.toLowerCase())).slice(0,6);
+
+  const hits = allData.filter(i =>
+    String(i.SKU_Kodu).toLowerCase().includes(q) ||
+    String(i.Depo_Kodu_1).toLowerCase().includes(q) ||
+    String(i.Depo_Kodu_2).toLowerCase().includes(q)
+  ).slice(0, 8);
+
   if(hits.length === 0) { hideSugg(); showNotFound(); return; }
   if(hits.length === 1) { hideSugg(); showCard(hits[0]); return; }
   showSugg(hits);
@@ -398,18 +404,33 @@ function onSearch() {
 
 function onKey(e) {
   if(e.key === 'Enter') {
-    const q = document.getElementById('searchInput').value.trim();
-    const m = allData.find(i => String(i.SKU_Kodu).toLowerCase() === q.toLowerCase());
+    const q = document.getElementById('searchInput').value.trim().toLowerCase();
+    // Önce tam eşleşme ara (SKU veya Depo kodu)
+    const m = allData.find(i =>
+      String(i.SKU_Kodu).toLowerCase() === q ||
+      String(i.Depo_Kodu_1).toLowerCase() === q ||
+      String(i.Depo_Kodu_2).toLowerCase() === q
+    );
     if(m) { hideSugg(); showCard(m); }
   }
 }
 
 function showSugg(items) {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
   const el = document.getElementById('suggestions');
-  el.innerHTML = items.map(i => `<div class="sug-item" onclick="pick('${i.SKU_Kodu}')">
-    <div class="sug-name">${i.Kalem_Aciklamasi}</div>
-    <div class="sug-sku">${i.SKU_Kodu}</div>
-  </div>`).join('');
+  el.innerHTML = items.map(i => {
+    // Hangi alanda eşleşti?
+    let etiket = '';
+    if(String(i.Depo_Kodu_1).toLowerCase().includes(q) && i.Depo_Kodu_1)
+      etiket = `<span style="font-size:0.68rem;background:#e8f4fd;color:#1a6496;padding:1px 6px;border-radius:4px;margin-left:6px">Depo-1: ${i.Depo_Kodu_1}</span>`;
+    else if(String(i.Depo_Kodu_2).toLowerCase().includes(q) && i.Depo_Kodu_2)
+      etiket = `<span style="font-size:0.68rem;background:#e8f4fd;color:#1a6496;padding:1px 6px;border-radius:4px;margin-left:6px">Depo-2: ${i.Depo_Kodu_2}</span>`;
+
+    return `<div class="sug-item" onclick="pick('${i.SKU_Kodu}')">
+      <div class="sug-name">${i.Kalem_Aciklamasi}${etiket}</div>
+      <div class="sug-sku">${i.SKU_Kodu}</div>
+    </div>`;
+  }).join('');
   el.style.display = 'block';
   document.getElementById('resultArea').innerHTML = '';
 }
@@ -508,21 +529,39 @@ function islemTuruDegis() {
 
 // ── SKU ARA (Hareket formu) ──
 function skuAra() {
-  const sku = document.getElementById('hareketSku').value.trim();
+  const q = document.getElementById('hareketSku').value.trim().toLowerCase();
   const info = document.getElementById('hareketSkuInfo');
   const btnG = document.getElementById('btnGiris');
   const btnC = document.getElementById('btnCikis');
-  if(!sku) { info.style.display='none'; btnG.disabled=true; btnC.disabled=true; return; }
-  const item = allData.find(i => String(i.SKU_Kodu).toLowerCase() === sku.toLowerCase());
+  if(!q) { info.style.display='none'; btnG.disabled=true; btnC.disabled=true; return; }
+
+  // SKU, Depo Kodu 1 veya Depo Kodu 2 ile ara
+  const item = allData.find(i =>
+    String(i.SKU_Kodu).toLowerCase() === q ||
+    (i.Depo_Kodu_1 && String(i.Depo_Kodu_1).toLowerCase() === q) ||
+    (i.Depo_Kodu_2 && String(i.Depo_Kodu_2).toLowerCase() === q)
+  );
+
   if(item) {
+    // Hangi alanla bulundu?
+    let bulunanAlan = '';
+    if(String(i => i.SKU_Kodu) !== q && item.Depo_Kodu_1 && String(item.Depo_Kodu_1).toLowerCase() === q)
+      bulunanAlan = ' (Depo-1)';
+    else if(item.Depo_Kodu_2 && String(item.Depo_Kodu_2).toLowerCase() === q)
+      bulunanAlan = ' (Depo-2)';
+
     info.style.display = 'block';
-    info.textContent = item.Kalem_Aciklamasi + ' — Mevcut: ' + Number(item.Mevcut_Stok).toLocaleString() + ' ' + item.Olcu_Birimi;
+    info.style.color = 'var(--muted)';
+    info.textContent = item.Kalem_Aciklamasi + bulunanAlan + ' — Mevcut: ' + Number(item.Mevcut_Stok).toLocaleString() + ' ' + item.Olcu_Birimi;
+    // SKU kodunu otomatik doldur (depo koduyla girdiyse)
+    document.getElementById('hareketSku').dataset.resolvedSku = item.SKU_Kodu;
     btnG.disabled = false;
     btnC.disabled = false;
   } else {
     info.style.display = 'block';
-    info.textContent = 'SKU bulunamadı';
+    info.textContent = 'Bulunamadı — SKU veya depo kodu ile deneyin';
     info.style.color = 'var(--danger)';
+    document.getElementById('hareketSku').dataset.resolvedSku = '';
     btnG.disabled = true;
     btnC.disabled = true;
   }
@@ -530,7 +569,7 @@ function skuAra() {
 
 // ── STOK GİRİŞ ──
 async function stokGiris() {
-  const sku = document.getElementById('hareketSku').value.trim();
+  const sku = document.getElementById('hareketSku').dataset.resolvedSku || document.getElementById('hareketSku').value.trim();
   const miktar = parseFloat(document.getElementById('hareketMiktar').value);
   const tur = document.getElementById('islemTuru').value;
   const tedarikci = document.getElementById('girisTedarikci').value.trim();
@@ -575,7 +614,7 @@ async function stokGiris() {
 
 // ── STOK ÇIKIŞ ──
 async function stokCikis() {
-  const sku = document.getElementById('hareketSku').value.trim();
+  const sku = document.getElementById('hareketSku').dataset.resolvedSku || document.getElementById('hareketSku').value.trim();
   const miktar = parseFloat(document.getElementById('hareketMiktar').value);
   const tur = document.getElementById('islemTuru').value;
   const not = document.getElementById('hareketNot').value.trim();
