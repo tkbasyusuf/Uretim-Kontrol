@@ -323,6 +323,16 @@ let allData = [];
 let currentItem = null;
 let excelData = [];
 
+// ── YARDIMCI: Tüm kod sütunlarını getir ──
+function getAllCodes(i) {
+  // Objenin tüm key'lerini tara - içinde "KOD", "kod", "Kodu", "kodu" geçenleri al
+  const kodFields = Object.entries(i)
+    .filter(([k]) => k.toLowerCase().includes('kod') || k.toLowerCase().includes('sku'))
+    .map(([,v]) => String(v||''))
+    .filter(v => v && v !== '-');
+  return kodFields;
+}
+
 // ── YARDIMCI: Sütun isim uyumu ──
 function g(item, ...keys) {
   for(const k of keys) {
@@ -404,15 +414,7 @@ function onSearch() {
   if(q.length < 2) { hideSugg(); showEmpty(); return; }
 
   const hits = allData.filter(i => {
-    const fields = [
-      i['SKU Kodu']||i.SKU_Kodu||i.sku||'',
-      i['Depo Kodu -1 ']||i['Depo Kodu -1']||i.Depo_Kodu_1||i.depo_kodu1||'',
-      i['Depo Kodu -2']||i.Depo_Kodu_2||i.depo_kodu2||'',
-      i['MST-1 KOD']||i.MST_1||i.mst1||'',
-      i['MST-2 KOD']||i.MST_2||i.mst2||'',
-      i['ELS-1 KOD']||i.ELS_1||i.els1||'',
-      i['ELS-2 KOD']||i.ELS_2||i.els2||'',
-    ];
+    const fields = getAllCodes(i);
     return fields.some(f => String(f).toLowerCase().includes(q));
   }).slice(0, 8);
 
@@ -443,17 +445,13 @@ function showSugg(items) {
   el.innerHTML = items.map(i => {
     let etiket = '';
     const tag = (lbl, val) => `<span style="font-size:0.68rem;background:#e8f4fd;color:#1a6496;padding:1px 6px;border-radius:4px;margin-left:4px">${lbl}: ${val}</span>`;
-    const d1=i['Depo Kodu -1 ']||i['Depo Kodu -1']||i.depo_kodu1||'', d2=i['Depo Kodu -2']||i.depo_kodu2||'';
-    const m1=i['MST-1 KOD']||i.mst1||'', m2=i['MST-2 KOD']||i.mst2||'';
-    const e1=i['ELS-1 KOD']||i.els1||'', e2=i['ELS-2 KOD']||i.els2||'';
     const sku=String(i['SKU Kodu']||i.SKU_Kodu||i.sku||'');
     const aciklama=i['Kalem Açıklaması']||i.Kalem_Aciklamasi||i.aciklama||'';
-    if(d1 && d1.toLowerCase().includes(q)) etiket = tag('Depo-1', d1);
-    else if(d2 && d2.toLowerCase().includes(q)) etiket = tag('Depo-2', d2);
-    else if(m1 && m1.toLowerCase().includes(q)) etiket = tag('MST-1', m1);
-    else if(m2 && m2.toLowerCase().includes(q)) etiket = tag('MST-2', m2);
-    else if(e1 && e1.toLowerCase().includes(q)) etiket = tag('ELS-1', e1);
-    else if(e2 && e2.toLowerCase().includes(q)) etiket = tag('ELS-2', e2);
+    // Hangi sütunda eşleşti?
+    const eslesenSutun = Object.entries(i).find(([k,v]) => 
+      k.toLowerCase().includes('kod') && String(v||'').toLowerCase().includes(q) && String(v) !== sku
+    );
+    if(eslesenSutun) etiket = tag(eslesenSutun[0], eslesenSutun[1]);
     return `<div class="sug-item" onclick="pick('${sku}')">
       <div class="sug-name">${aciklama}${etiket}</div>
       <div class="sug-sku">${sku}</div>
@@ -577,15 +575,7 @@ function skuAra() {
 
   // SKU, Depo Kodu, MST veya ELS ile ara
   const item = allData.find(i => {
-    const fields = [
-      i['SKU Kodu']||i.SKU_Kodu||i.sku||'',
-      i['Depo Kodu -1 ']||i['Depo Kodu -1']||i.Depo_Kodu_1||i.depo_kodu1||'',
-      i['Depo Kodu -2']||i.Depo_Kodu_2||i.depo_kodu2||'',
-      i['MST-1 KOD']||i.MST_1||i.mst1||'',
-      i['MST-2 KOD']||i.MST_2||i.mst2||'',
-      i['ELS-1 KOD']||i.ELS_1||i.els1||'',
-      i['ELS-2 KOD']||i.ELS_2||i.els2||'',
-    ];
+    const fields = getAllCodes(i);
     return fields.some(f => String(f).toLowerCase() === q);
   });
 
