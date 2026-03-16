@@ -147,6 +147,8 @@
   .excel-row .miktar { font-weight: bold; color: var(--danger); }
   .excel-row.err { background: var(--danger-bg); }
   .excel-row.err .sku { color: var(--danger); }
+  .toplu-tab { padding: 10px; font-size: 0.85rem; font-family: var(--font); border: 1px solid var(--border); border-radius: 10px; background: var(--bg); cursor: pointer; color: var(--muted); }
+  .toplu-tab.active-tab { background: var(--accent); color: #fff; border-color: var(--accent); }
 </style>
 </head>
 <body>
@@ -215,18 +217,72 @@
             <input type="number" id="hareketMiktar" placeholder="0" min="1" />
           </div>
           <div class="form-group">
-            <label>Not (opsiyonel)</label>
-            <input type="text" id="hareketNot" placeholder="..." />
+            <label>İşlem Türü</label>
+            <select id="islemTuru" onchange="islemTuruDegis()">
+              <option value="giris_tedarikciden">📥 Girişi: Tedarikçiden</option>
+              <option value="giris_iade">📥 Giriş: İade / Sayım Düzeltme</option>
+              <option value="cikis_uretim">📤 Çıkış: Üretime</option>
+              <option value="cikis_uretim_disi">📤 Çıkış: Üretim Dışı</option>
+              <option value="cikis_fire">📤 Çıkış: Fire / Hasar</option>
+            </select>
           </div>
         </div>
 
+        <!-- GİRİŞ ALANLARI -->
+        <div id="girisAlanlari">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Tedarikçi</label>
+              <input type="text" id="girisTedarikci" placeholder="Tedarikçi adı..." />
+            </div>
+            <div class="form-group">
+              <label>İrsaliye / Fatura No</label>
+              <input type="text" id="girisBelge" placeholder="İrsaliye no..." />
+            </div>
+          </div>
+        </div>
+
+        <!-- ÇIKIŞ ALANLARI -->
+        <div id="cikisAlanlari" style="display:none">
+          <div id="uretimAlani">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Üretim Emri / İş Emri No</label>
+                <input type="text" id="uretimNo" placeholder="Ör: UE-2024-001" />
+              </div>
+              <div class="form-group">
+                <label>Ürün / Proje Adı</label>
+                <input type="text" id="uretimAdi" placeholder="Ör: R2AT 1/2 Hortum" />
+              </div>
+            </div>
+          </div>
+          <div id="uretimDisiAlani" style="display:none">
+            <div class="form-group">
+              <label>Çıkış Sebebi</label>
+              <input type="text" id="cikisSebebi" placeholder="Ör: Bakım, Numune, Sayım düzeltme..." />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Not (opsiyonel)</label>
+          <input type="text" id="hareketNot" placeholder="Ek açıklama..." />
+        </div>
+
         <button class="btn-giris" id="btnGiris" onclick="stokGiris()" disabled>+ Stok Girişi</button>
-        <button class="btn-cikis" id="btnCikis" onclick="stokCikis()" disabled>− Stok Çıkışı</button>
+        <button class="btn-cikis" id="btnCikis" onclick="stokCikis()" disabled style="display:none">− Stok Çıkışı</button>
       </div>
 
-      <!-- Toplu Excel Çıkışı -->
+      <!-- Toplu Excel İşlemleri -->
       <div class="form-card">
-        <h3>Toplu Stok Çıkışı (Excel)</h3>
+        <h3>Toplu Stok İşlemi (Excel / CSV)</h3>
+
+        <!-- İşlem tipi seçimi -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <button id="tabGirisBtn" class="toplu-tab active-tab" onclick="setTopluTip('giris')">📥 Toplu Giriş</button>
+          <button id="tabCikisBtn" class="toplu-tab" onclick="setTopluTip('cikis')">📤 Toplu Çıkış</button>
+        </div>
+
         <div class="upload-area" onclick="document.getElementById('fileInput').click()">
           <div class="upload-icon">📄</div>
           <div class="upload-text">Excel dosyası seç (.xlsx veya .csv)<br><small>Sütunlar: SKU_Kodu, Miktar</small></div>
@@ -234,7 +290,8 @@
         <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFile(event)" />
         <div id="excelPreview"></div>
         <div id="btnTopluArea" style="display:none">
-          <button class="btn-cikis" onclick="topluCikis()">Toplu Çıkış Uygula</button>
+          <button class="btn-giris" id="btnTopluGiris" onclick="topluIslem('giris')" style="display:none">📥 Toplu Girişi Uygula</button>
+          <button class="btn-cikis" id="btnTopluCikis" onclick="topluIslem('cikis')">📤 Toplu Çıkışı Uygula</button>
         </div>
       </div>
     </div>
@@ -436,6 +493,18 @@ function calcW() {
   res.style.display = 'block';
 }
 
+// ── İŞLEM TÜRÜ DEĞİŞ ──
+function islemTuruDegis() {
+  const tur = document.getElementById('islemTuru').value;
+  const giris = tur.startsWith('giris');
+  document.getElementById('girisAlanlari').style.display = giris ? 'block' : 'none';
+  document.getElementById('cikisAlanlari').style.display = giris ? 'none' : 'block';
+  document.getElementById('btnGiris').style.display = giris ? 'block' : 'none';
+  document.getElementById('btnCikis').style.display = giris ? 'none' : 'block';
+  document.getElementById('uretimAlani').style.display = tur === 'cikis_uretim' ? 'block' : 'none';
+  document.getElementById('uretimDisiAlani').style.display = tur !== 'cikis_uretim' ? 'block' : 'none';
+}
+
 // ── SKU ARA (Hareket formu) ──
 function skuAra() {
   const sku = document.getElementById('hareketSku').value.trim();
@@ -462,8 +531,18 @@ function skuAra() {
 async function stokGiris() {
   const sku = document.getElementById('hareketSku').value.trim();
   const miktar = parseFloat(document.getElementById('hareketMiktar').value);
+  const tur = document.getElementById('islemTuru').value;
+  const tedarikci = document.getElementById('girisTedarikci').value.trim();
+  const belge = document.getElementById('girisBelge').value.trim();
   const not = document.getElementById('hareketNot').value.trim();
   if(!sku || !miktar || miktar<=0) { showToast('SKU ve miktar zorunlu!', 'error'); return; }
+
+  // Not metnini zenginleştir
+  const turAdi = tur === 'giris_tedarikciden' ? 'Tedarikçi Girişi' : 'İade/Düzeltme';
+  let detay = turAdi;
+  if(tedarikci) detay += ' | Tedarikçi: ' + tedarikci;
+  if(belge) detay += ' | Belge: ' + belge;
+  if(not) detay += ' | ' + not;
 
   document.getElementById('btnGiris').disabled = true;
   document.getElementById('btnGiris').textContent = 'Kaydediliyor...';
@@ -471,16 +550,17 @@ async function stokGiris() {
   try {
     const res = await fetch(API_URL, {
       method: 'POST',
-      body: JSON.stringify({ action: 'giris', sku, miktar, operator: opName, not })
+      body: JSON.stringify({ action: 'giris', sku, miktar, operator: opName, not: detay })
     });
     const json = await res.json();
     if(json.success) {
-      // Lokal veriyi güncelle
       const item = allData.find(i => String(i.SKU_Kodu) === String(sku));
       if(item) item.Mevcut_Stok = json.yeniStok;
       showToast('✓ Giriş kaydedildi! Yeni stok: ' + json.yeniStok, 'success');
       document.getElementById('hareketMiktar').value = '';
       document.getElementById('hareketNot').value = '';
+      document.getElementById('girisTedarikci').value = '';
+      document.getElementById('girisBelge').value = '';
       skuAra();
     } else {
       showToast(json.error || 'Hata oluştu', 'error');
@@ -496,8 +576,28 @@ async function stokGiris() {
 async function stokCikis() {
   const sku = document.getElementById('hareketSku').value.trim();
   const miktar = parseFloat(document.getElementById('hareketMiktar').value);
+  const tur = document.getElementById('islemTuru').value;
   const not = document.getElementById('hareketNot').value.trim();
   if(!sku || !miktar || miktar<=0) { showToast('SKU ve miktar zorunlu!', 'error'); return; }
+
+  // Not metnini zenginleştir
+  let detay = '';
+  if(tur === 'cikis_uretim') {
+    const ueNo = document.getElementById('uretimNo').value.trim();
+    const ueAdi = document.getElementById('uretimAdi').value.trim();
+    detay = 'Üretim Çıkışı';
+    if(ueNo) detay += ' | İş Emri: ' + ueNo;
+    if(ueAdi) detay += ' | Ürün: ' + ueAdi;
+  } else if(tur === 'cikis_uretim_disi') {
+    const sebep = document.getElementById('cikisSebebi').value.trim();
+    detay = 'Üretim Dışı Çıkış';
+    if(sebep) detay += ' | Sebep: ' + sebep;
+  } else if(tur === 'cikis_fire') {
+    const sebep = document.getElementById('cikisSebebi').value.trim();
+    detay = 'Fire/Hasar';
+    if(sebep) detay += ' | ' + sebep;
+  }
+  if(not) detay += ' | ' + not;
 
   document.getElementById('btnCikis').disabled = true;
   document.getElementById('btnCikis').textContent = 'Kaydediliyor...';
@@ -505,7 +605,7 @@ async function stokCikis() {
   try {
     const res = await fetch(API_URL, {
       method: 'POST',
-      body: JSON.stringify({ action: 'cikis', sku, miktar, operator: opName, not })
+      body: JSON.stringify({ action: 'cikis', sku, miktar, operator: opName, not: detay })
     });
     const json = await res.json();
     if(json.success) {
@@ -514,6 +614,9 @@ async function stokCikis() {
       showToast('✓ Çıkış kaydedildi! Yeni stok: ' + json.yeniStok, 'success');
       document.getElementById('hareketMiktar').value = '';
       document.getElementById('hareketNot').value = '';
+      document.getElementById('uretimNo').value = '';
+      document.getElementById('uretimAdi').value = '';
+      document.getElementById('cikisSebebi').value = '';
       skuAra();
     } else {
       showToast(json.error || 'Hata oluştu', 'error');
@@ -525,6 +628,18 @@ async function stokCikis() {
   document.getElementById('btnCikis').textContent = '− Stok Çıkışı';
 }
 
+// ── TOPLU İŞLEM TİPİ ──
+let topluTip = 'cikis';
+function setTopluTip(tip) {
+  topluTip = tip;
+  document.getElementById('tabGirisBtn').classList.toggle('active-tab', tip==='giris');
+  document.getElementById('tabCikisBtn').classList.toggle('active-tab', tip==='cikis');
+  document.getElementById('btnTopluGiris').style.display = tip==='giris' ? 'block' : 'none';
+  document.getElementById('btnTopluCikis').style.display = tip==='cikis' ? 'block' : 'none';
+  // Dosya varsa önizlemeyi yenile
+  if(excelData.length > 0) renderPreview();
+}
+
 // ── EXCEL TOPLU ÇIKIŞ ──
 function handleFile(event) {
   const file = event.target.files[0];
@@ -534,8 +649,6 @@ function handleFile(event) {
     const text = e.target.result;
     const lines = text.split('\n').filter(l => l.trim());
     excelData = [];
-    const preview = document.getElementById('excelPreview');
-    let html = '';
     for(let i=1; i<lines.length; i++) {
       const cols = lines[i].split(',').map(c => c.trim().replace(/"/g,''));
       if(cols.length < 2) continue;
@@ -543,21 +656,32 @@ function handleFile(event) {
       const miktar = parseFloat(cols[1]);
       if(!sku || isNaN(miktar)) continue;
       const found = allData.find(it => String(it.SKU_Kodu) === String(sku));
-      const err = !found;
-      excelData.push({sku, miktar, found: !err});
-      html += `<div class="excel-row ${err?'err':''}">
-        <span>${found ? found.Kalem_Aciklamasi.substring(0,40) : 'SKU bulunamadı'}</span>
-        <span class="sku">${sku}</span>
-        <span class="miktar">-${miktar}</span>
-      </div>`;
+      excelData.push({sku, miktar, found: !!found});
     }
-    preview.innerHTML = `<div class="excel-preview">${html}</div>`;
-    document.getElementById('btnTopluArea').style.display = excelData.filter(d=>d.found).length > 0 ? 'block' : 'none';
+    renderPreview();
   };
   reader.readAsText(file);
 }
 
-async function topluCikis() {
+function renderPreview() {
+  const isim = topluTip === 'giris' ? '+' : '-';
+  let html = '';
+  excelData.forEach(d => {
+    const found = allData.find(it => String(it.SKU_Kodu) === String(d.sku));
+    html += `<div class="excel-row ${!d.found?'err':''}">
+      <span>${d.found && found ? found.Kalem_Aciklamasi.substring(0,40) : 'SKU bulunamadı'}</span>
+      <span class="sku">${d.sku}</span>
+      <span class="miktar" style="color:${topluTip==='giris'?'var(--ok)':'var(--danger)'}">${isim}${d.miktar}</span>
+    </div>`;
+  });
+  document.getElementById('excelPreview').innerHTML = `<div class="excel-preview">${html}</div>`;
+  const valid = excelData.filter(d=>d.found).length > 0;
+  document.getElementById('btnTopluArea').style.display = valid ? 'block' : 'none';
+  document.getElementById('btnTopluGiris').style.display = topluTip==='giris' ? 'block' : 'none';
+  document.getElementById('btnTopluCikis').style.display = topluTip==='cikis' ? 'block' : 'none';
+}
+
+async function topluIslem(tip) {
   const validItems = excelData.filter(d=>d.found);
   if(validItems.length === 0) { showToast('Geçerli kayıt yok', 'error'); return; }
   showToast('İşleniyor...', '');
@@ -566,7 +690,7 @@ async function topluCikis() {
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
-        body: JSON.stringify({ action: 'cikis', sku: item.sku, miktar: item.miktar, operator: opName, not: 'Toplu çıkış' })
+        body: JSON.stringify({ action: tip, sku: item.sku, miktar: item.miktar, operator: opName, not: tip==='giris' ? 'Toplu giriş' : 'Toplu çıkış' })
       });
       const json = await res.json();
       if(json.success) {
@@ -576,7 +700,8 @@ async function topluCikis() {
       }
     } catch(e) {}
   }
-  showToast(`✓ ${basarili}/${validItems.length} kayıt güncellendi`, 'success');
+  const isimTR = tip === 'giris' ? 'giriş' : 'çıkış';
+  showToast(`✓ ${basarili}/${validItems.length} ${isimTR} kaydedildi`, 'success');
   document.getElementById('excelPreview').innerHTML = '';
   document.getElementById('btnTopluArea').style.display = 'none';
   document.getElementById('fileInput').value = '';
