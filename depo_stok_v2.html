@@ -786,51 +786,62 @@ function parseCSV(text) {
 
 function parseRows(rows) {
   excelData = [];
-  
-  // Başlık satırını bul ve sütun indekslerini belirle
-  let startIdx = 1;
-  let colIdx = {sku:0, miktar:1, tedarikci:2, irsaliye:3, uretimNo:4, uretimAdi:5, not:6};
-  
-  for(let i=0; i<Math.min(3,rows.length); i++) {
-    const r = rows[i];
-    if(!r) continue;
-    const rowStr = r.join('|').toLowerCase();
-    if(rowStr.includes('sku') || rowStr.includes('kod')) {
-      startIdx = i + 1;
-      // Dinamik sütun eşleştirme
-      r.forEach((h, idx) => {
-        const k = String(h).toLowerCase().trim();
-        if(k.includes('sku') || k.includes('kod')) colIdx.sku = idx;
-        else if(k.includes('miktar') || k.includes('adet')) colIdx.miktar = idx;
-        else if(k.includes('tedarik')) colIdx.tedarikci = idx;
-        else if(k.includes('irsaliye') || k.includes('fatura') || k.includes('belge')) colIdx.irsaliye = idx;
-        else if(k.includes('uretim_no') || k.includes('üretim_no') || k.includes('is_emri') || k.includes('iş emri')) colIdx.uretimNo = idx;
-        else if(k.includes('uretim_adi') || k.includes('ürün') || k.includes('urun')) colIdx.uretimAdi = idx;
-        else if(k.includes('not') || k.includes('açıklama') || k.includes('aciklama')) colIdx.not = idx;
-      });
-      break;
-    }
+  if(!rows || rows.length < 2) {
+    showToast('Dosyada veri bulunamadı!', 'error');
+    return;
   }
 
-  for(let i=startIdx; i<rows.length; i++) {
+  // İlk satır başlık - sütun indexlerini bul
+  const header = rows[0].map(h => String(h||'').toLowerCase().trim());
+  const skuIdx    = header.findIndex(h => h.includes('sku') || h.includes('kod'));
+  const miktarIdx = header.findIndex(h => h.includes('miktar') || h.includes('adet'));
+  const tedIdx    = header.findIndex(h => h.includes('tedarik'));
+  const irsIdx    = header.findIndex(h => h.includes('irsali') || h.includes('fatura'));
+  const ueIdx     = header.findIndex(h => h.includes('uretim') || h.includes('üretim') || h.includes('iş') || h.includes('is_'));
+  const uaIdx     = header.findIndex(h => h.includes('urun') || h.includes('ürün') || h.includes('proje'));
+  const notIdx    = header.findIndex(h => h.includes('not') || h.includes('sebep') || h.includes('acik'));
+
+  const si = skuIdx >= 0 ? skuIdx : 0;
+  const mi = miktarIdx >= 0 ? miktarIdx : 1;
+
+  for(let i=1; i<rows.length; i++) {
     const cols = rows[i];
     if(!cols || cols.length < 2) continue;
-    const sku = String(cols[colIdx.sku] || '').trim();
-    const miktar = parseFloat(cols[colIdx.miktar]);
-    if(!sku || isNaN(miktar) || miktar <= 0) continue;
-    const found = allData.find(it => String(it.SKU_Kodu).trim() === sku);
+    
+    const sku = String(cols[si]||'').trim();
+    if(!sku || sku === '' || sku.toLowerCase() === 'null') continue;
+    
+    // Miktar - sayıya çevir
+    let miktar = 0;
+    const mVal = cols[mi];
+    if(typeof mVal === 'number') {
+      miktar = mVal;
+    } else {
+      miktar = parseFloat(String(mVal||'').replace(',','.'));
+    }
+    if(isNaN(miktar) || miktar <= 0) continue;
+
+    // allData'da bu SKU var mı?
+    const found = allData.find(it => 
+      String(it['SKU Kodu']||it.SKU_Kodu||it.sku||'').trim() === sku
+    );
+
     excelData.push({
-      sku, miktar, found: !!found,
-      tedarikci: String(cols[colIdx.tedarikci] || '').trim(),
-      irsaliye:  String(cols[colIdx.irsaliye]  || '').trim(),
-      uretimNo:  String(cols[colIdx.uretimNo]  || '').trim(),
-      uretimAdi: String(cols[colIdx.uretimAdi] || '').trim(),
-      not:       String(cols[colIdx.not]        || '').trim()
+      sku,
+      miktar,
+      found: !!found,
+      extra: {
+        tedarikci: tedIdx >= 0 ? String(cols[tedIdx]||'').trim() : '',
+        irsaliye:  irsIdx >= 0 ? String(cols[irsIdx]||'').trim() : '',
+        uretimNo:  ueIdx  >= 0 ? String(cols[ueIdx] ||'').trim() : '',
+        urunAdi:   uaIdx  >= 0 ? String(cols[uaIdx] ||'').trim() : '',
+        sebep:     notIdx >= 0 ? String(cols[notIdx] ||'').trim() : '',
+      }
     });
   }
 
   if(excelData.length === 0) {
-    showToast('Dosyada geçerli veri bulunamadı!', 'error');
+    showToast('Geçerli veri bulunamadı! Başlık satırı SKU_Kodu ve Miktar içermeli.', 'error');
     return;
   }
   renderPreview();
