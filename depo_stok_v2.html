@@ -821,10 +821,12 @@ function parseRows(rows) {
     }
     if(isNaN(miktar) || miktar <= 0) continue;
 
-    // allData'da bu SKU var mı?
-    const found = allData.find(it => 
-      String(it['SKU Kodu']||it.SKU_Kodu||it.sku||'').trim() === sku
-    );
+    // allData'da bu SKU var mı? - Büyük/küçük harf ve boşluk duyarsız
+    const skuNorm = sku.toLowerCase().replace(/\s+/g,'');
+    const found = allData.find(it => {
+      const itSku = String(it['SKU Kodu']||it.SKU_Kodu||it.sku||'').trim().toLowerCase().replace(/\s+/g,'');
+      return itSku === skuNorm;
+    });
 
     excelData.push({
       sku,
