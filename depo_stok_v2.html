@@ -298,6 +298,15 @@
 
     <!-- UYARILAR -->
     <div class="tab-panel" id="tab-uyarilar">
+      <!-- Rapor butonu -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <button onclick="raporIndir('tumliste')" style="padding:12px;font-size:0.82rem;font-family:var(--font);background:var(--accent);color:#fff;border:none;border-radius:10px;cursor:pointer">
+          📥 Tüm Stok Listesi
+        </button>
+        <button onclick="raporIndir('kritik')" style="padding:12px;font-size:0.82rem;font-family:var(--font);background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger);border-radius:10px;cursor:pointer">
+          ⚠️ Sipariş Listesi
+        </button>
+      </div>
       <div id="uyariArea">
         <div class="loading">Yükleniyor...</div>
       </div>
@@ -588,23 +597,22 @@ function skuAra() {
   });
 
   if(item) {
-    // Hangi alanla bulundu?
-    let bulunanAlan = '';
-    if(String(i => i.SKU_Kodu) !== q && item.Depo_Kodu_1 && String(item.Depo_Kodu_1).toLowerCase() === q)
-      bulunanAlan = ' (Depo-1)';
-    else if(item.Depo_Kodu_2 && String(item.Depo_Kodu_2).toLowerCase() === q)
-      bulunanAlan = ' (Depo-2)';
+    const resolvedSku = String(item['SKU Kodu']||item.SKU_Kodu||item.sku||'');
+    const aciklama = item['Kalem Açıklaması']||item.Kalem_Aciklamasi||item.aciklama||'';
+    const stok = Number(item['Mevcut Stok']||item.Mevcut_Stok||item.mevcut_stok||0);
+    const birim = item['Ölçü Birimi']||item.Olcu_Birimi||item.olcu_birimi||'';
+
+    // resolvedSku'yu sakla
+    document.getElementById('hareketSku').dataset.resolvedSku = resolvedSku;
 
     info.style.display = 'block';
     info.style.color = 'var(--muted)';
-    info.textContent = item.Kalem_Aciklamasi + bulunanAlan + ' — Mevcut: ' + _stok.toLocaleString() + ' ' + _birim;
-    // SKU kodunu otomatik doldur (depo koduyla girdiyse)
-    document.getElementById('hareketSku').dataset.resolvedSku = item['SKU Kodu']||item.SKU_Kodu||item.sku||'';
+    info.textContent = aciklama + ' (SKU: ' + resolvedSku + ') — Mevcut: ' + stok.toLocaleString() + ' ' + birim;
     btnG.disabled = false;
     btnC.disabled = false;
   } else {
     info.style.display = 'block';
-    info.textContent = 'Bulunamadı — SKU veya depo kodu ile deneyin';
+    info.textContent = 'Bulunamadı — SKU, Depo, MST veya ELS kodu deneyin';
     info.style.color = 'var(--danger)';
     document.getElementById('hareketSku').dataset.resolvedSku = '';
     btnG.disabled = true;
@@ -892,6 +900,71 @@ async function topluIslem(tip) {
   document.getElementById('btnTopluArea').style.display = 'none';
   document.getElementById('fileInput').value = '';
   excelData = [];
+}
+
+// ── RAPOR İNDİR ──
+function raporIndir(tip) {
+  if(!allData || allData.length === 0) { showToast('Veri yüklenemedi!', 'error'); return; }
+
+  let liste = allData;
+  let dosyaAdi = 'Stok_Raporu_' + new Date().toLocaleDateString('tr-TR').replace(/\./g,'-') + '.xlsx';
+
+  if(tip === 'kritik') {
+    // Sadece minimum stok altı ve sıfır olanlar
+    liste = allData.filter(i => {
+      const m = Number(i['Mevcut Stok']||i.mevcut_stok||0);
+      const min = Number(i['Minimum Stok']||i.minimum_stok||0);
+      return m < min;
+    });
+    dosyaAdi = 'Siparis_Listesi_' + new Date().toLocaleDateString('tr-TR').replace(/\./g,'-') + '.xlsx';
+    if(liste.length === 0) { showToast('Sipariş gerektiren kalem yok!', 'success'); return; }
+  }
+
+  // Excel oluştur
+  const wb = XLSX.utils.book_new();
+  const rows = [
+    ['SKU Kodu', 'Kalem Açıklaması', 'Tedarikçi -1', 'Tedarikçi -2', 
+     'Depo Kodu -1', 'Depo Kodu -2', 'MST-1 KOD', 'MST-2 KOD', 
+     'ELS-1 KOD', 'ELS-2 KOD', 'Malzeme Tipi', 'Ölçü Birimi', 
+     'Birim Ağırlık (Gram)', 'Raf / Lokasyon', 'Mevcut Stok', 'Minimum Stok', 'Durum']
+  ];
+
+  liste.forEach(i => {
+    const m = Number(i['Mevcut Stok']||i.mevcut_stok||0);
+    const min = Number(i['Minimum Stok']||i.minimum_stok||0);
+    const durum = m === 0 ? 'KRİTİK' : m < min ? 'UYARI' : 'NORMAL';
+    rows.push([
+      i['SKU Kodu']||i.sku||'',
+      i['Kalem Açıklaması']||i.aciklama||'',
+      i['Tedarikçi -1']||i.tedarikci1||'',
+      i['Tedarikçi -2']||i.tedarikci2||'',
+      i['Depo Kodu -1 ']||i['Depo Kodu -1']||i.depo_kodu1||'',
+      i['Depo Kodu -2']||i.depo_kodu2||'',
+      i['MST-1 KOD']||i.mst1||'',
+      i['MST-2 KOD']||i.mst2||'',
+      i['ELS-1 KOD']||i.els1||'',
+      i['ELS-2 KOD']||i.els2||'',
+      i['Malzeme Tipi']||i.malzeme_tipi||'',
+      i['Ölçü Birimi']||i.olcu_birimi||'',
+      i['Birim Ağırlık ( Gram)']||i.birim_agirlik||0,
+      i['Raf / Lokasyon']||i.raf||'',
+      m, min, durum
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  // Kolon genişlikleri
+  ws['!cols'] = [
+    {wch:18},{wch:40},{wch:16},{wch:16},
+    {wch:16},{wch:16},{wch:16},{wch:16},
+    {wch:18},{wch:18},{wch:14},{wch:10},
+    {wch:14},{wch:12},{wch:12},{wch:12},{wch:10}
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, tip === 'kritik' ? 'Siparis_Listesi' : 'Tum_Stok');
+  XLSX.writeFile(wb, dosyaAdi);
+  showToast('✓ ' + dosyaAdi + ' indirildi!', 'success');
 }
 
 // ── UYARILAR ──
