@@ -404,7 +404,8 @@ function showTab(tab) {
 
 // ── SORGULA ──
 function status(item) {
-  const m = Number(item.Mevcut_Stok), min = Number(_min);
+  const m   = Number(item['Mevcut Stok']||item.Mevcut_Stok||item.mevcut_stok||0);
+  const min = Number(item['Minimum Stok']||item.Minimum_Stok||item.minimum_stok||0);
   return m === 0 ? 'danger' : m < min ? 'warn' : 'ok';
 }
 
