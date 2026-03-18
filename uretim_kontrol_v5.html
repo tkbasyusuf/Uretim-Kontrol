@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Üretim Kontrol">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f3f6e">
+<title>Üretim Kontrol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a1628;--surface:#0f2040;--surface2:#162a50;
+  --accent:#1a7fd4;--accent2:#0f5fa0;
+  --green:#1db87a;--red:#e55;
+  --text:#e8f0f8;--text2:#8aaac8;--text3:#4a6a8a;
+  --border:#1e3558;--border2:#2a4870;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+  --r:12px;--rs:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);font-family:var(--sans);color:var(--text);overscroll-behavior:none;}
+body{display:flex;flex-direction:column;max-width:480px;margin:0 auto;min-height:100dvh;}
+
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);
+  padding:max(env(safe-area-inset-top),14px) 16px 14px;flex-shrink:0;}
+.hdr-inner{display:flex;align-items:center;gap:12px;}
+.hdr-icon{width:38px;height:38px;border-radius:10px;background:var(--accent2);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.hdr-icon svg{width:20px;height:20px;}
+.hdr-t{font-size:17px;font-weight:600;letter-spacing:-.01em;}
+.hdr-s{font-size:11px;color:var(--text3);margin-top:1px;font-family:var(--mono);}
+
+.opform{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;flex-shrink:0;}
+.opform-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;font-family:var(--mono);}
+.opform-row{display:flex;gap:8px;margin-bottom:8px;}
+.opform-row:last-child{margin-bottom:0;}
+.inp{flex:1;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--rs);
+  color:var(--text);font-size:15px;font-family:var(--sans);padding:10px 13px;outline:none;transition:.15s;}
+.inp::placeholder{color:var(--text3);font-size:14px;}
+.inp:focus{border-color:var(--accent);}
+.inp-mono{font-family:var(--mono);font-size:14px;}
+.op-set{background:var(--green);color:#fff;border:none;border-radius:var(--rs);
+  padding:0 16px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.op-set:active{opacity:.82;}
+.op-badge{display:none;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rs);
+  padding:8px 14px;font-size:13px;color:var(--text2);align-items:center;justify-content:space-between;}
+.op-badge.show{display:flex;}
+.op-edit{background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;font-family:var(--sans);}
+
+.search-wrap{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;}
+.search-row{display:flex;gap:8px;}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:var(--rs);
+  padding:0 20px;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.btn:active{opacity:.82;}
+
+.quick-wrap{padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.ql{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;font-family:var(--mono);}
+.chips{display:flex;gap:7px;flex-wrap:wrap;}
+.chip{background:var(--bg);border:1px solid var(--border2);border-radius:20px;
+  padding:5px 13px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;font-family:var(--mono);}
+.chip:active{background:var(--surface2);color:var(--text);border-color:var(--accent);}
+
+.results{flex:1;overflow-y:auto;padding:14px 14px 40px;-webkit-overflow-scrolling:touch;}
+
+.empty{display:flex;flex-direction:column;align-items:center;padding:50px 20px;color:var(--text3);text-align:center;gap:12px;}
+.empty-icon{width:56px;height:56px;border-radius:16px;background:var(--surface);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;}
+.empty-icon svg{width:24px;height:24px;}
+.empty-t{font-size:15px;color:var(--text2);font-weight:500;}
+.empty-s{font-size:13px;line-height:1.5;}
+
+.rcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px;animation:fu .2s ease;}
+@keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.rcard-hd{background:var(--accent2);padding:13px 16px;}
+.rcard-meta{display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap;}
+.badge{font-family:var(--mono);font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;
+  background:rgba(255,255,255,.15);color:rgba(255,255,255,.9);}
+.badge-no{background:rgba(0,0,0,.25);}
+.rcard-title{font-size:14px;font-weight:600;color:#fff;line-height:1.4;}
+
+.rcard-body{padding:0;}
+.clist{display:flex;flex-direction:column;}
+.crow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+  padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface2);}
+.crow:nth-child(odd){background:var(--surface);}
+.crow:last-child{border-bottom:none;}
+.crow-lbl{font-size:12px;color:var(--text3);flex-shrink:0;padding-top:1px;width:130px;}
+.crow-val{font-size:13px;font-family:var(--mono);color:var(--text);word-break:break-all;line-height:1.4;text-align:right;}
+.crow-yok{color:var(--text3);font-style:italic;font-family:var(--sans);font-size:12px;}
+
+.not-box{background:#1a2a10;border:1px solid rgba(100,200,50,.3);border-radius:var(--rs);
+  padding:10px 14px;margin:8px 16px 12px;}
+.not-lbl{font-size:10px;color:#8bc34a;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;font-family:var(--mono);}
+.not-val{font-size:13px;color:#c5e8a0;line-height:1.4;}
+
+.kaydet-wrap{padding:12px 16px;border-top:1px solid var(--border);background:var(--surface);}
+.btn-kaydet{width:100%;padding:13px;background:var(--green);color:#fff;border:none;
+  border-radius:var(--rs);font-size:15px;font-weight:600;cursor:pointer;}
+.btn-kaydet:active{opacity:.82;}
+.btn-kaydet:disabled{background:var(--surface2);color:var(--text3);cursor:not-allowed;}
+
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--green);color:#fff;padding:11px 22px;border-radius:30px;
+  font-size:14px;font-weight:500;opacity:0;transition:.3s;pointer-events:none;z-index:999;white-space:nowrap;}
+.toast.err{background:var(--red);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.notfound{text-align:center;padding:40px 20px;color:var(--text3);}
+.notfound strong{color:var(--text2);font-family:var(--mono);}
+.notfound-hint{font-size:12px;margin-top:6px;}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#7dc8f5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+        <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+      </svg>
+    </div>
+    <div><div class="hdr-t">Üretim Kontrol</div><div class="hdr-s">Kalem sorgulama sistemi</div></div>
+  </div>
+</div>
+
+<div class="opform" id="opform">
+  <div class="opform-title" id="opTitle">Operatör bilgileri</div>
+  <div id="opInputs">
+    <div class="opform-row">
+      <input class="inp" type="text" id="adSoyad" placeholder="Ad Soyad" autocomplete="name"/>
+    </div>
+    <div class="opform-row">
+      <input class="inp inp-mono" type="text" id="uretimNo" placeholder="Üretim No" autocomplete="off"/>
+      <button class="op-set" onclick="operatorKaydet()">Kaydet</button>
+    </div>
+  </div>
+  <div class="op-badge" id="opBadge">
+    <span id="opBadgeText"></span>
+    <button class="op-edit" onclick="operatorDegistir()">Değiştir</button>
+  </div>
+</div>
+
+<div class="search-wrap">
+  <div class="search-row">
+    <input class="inp inp-mono" type="text" id="inp" placeholder="Kalem kodu veya raf no..." inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false"/>
+    <button class="btn" onclick="doSearch()">Ara</button>
+  </div>
+</div>
+
+<div class="quick-wrap">
+  <div class="ql">Hızlı erişim</div>
+  <div class="chips" id="chips"></div>
+</div>
+
+<div class="results" id="results">
+  <div class="empty">
+    <div class="empty-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    </div>
+    <div class="empty-t">Operatör bilgilerini girin</div>
+    <div class="empty-s">Ad soyad ve üretim numarasını girdikten<br>sonra kalem kodu arayabilirsiniz</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var SHEET_URL = 'https://script.google.com/macros/s/AKfycbziAvQR5qURlSpMlwJJzWvK9YM4thvHD0LV9wfQZ1Hxx-IrBj_Fq71ROaIgWHQbaZxB/exec';
+const DATA=[{"no": 1, "kod": "5251721313880000", "raf": "R255", "ac": "HORTUM, 1\" 1SC TB:260 (REF:172107203)", "hortum": "5251721072630000", "hortum_ac": "HOSE, 1\",1SC, (DUNLOP 121T SLIMELINE PLUS - 1SC)", "kesim": "26", "tam_boy": "26", "b1k": "BAŞLIK YOK", "b1a": "BAŞLIK YOK", "b2k": "BAŞLIK YOK", "b2a": "BAŞLIK YOK", "s1k": "SOKET YOK", "s1a": "SOKET YOK", "s2k": "SOKET YOK", "s2a": "SOKET YOK", "ory": "", "sp": "", "sp_ac": "", "sp_kesim": "", "not_": ""}, {"no": 2, "kod": "5251721312890000", "raf": "R66", "ac": "HORTUM, 5/16\" 2SC 90+90 10S TB:1580 ORY:250 TB:SPIRAL (REF:174106261)", "hortum": "5251721072580000", "hortum_ac": "Hortum, 5/16, 2sc, (Dunlop 241t Superslimline Hi-Tuff)", "kesim": "151.5", "tam_boy": "158", "b1k": "5251741308430000", "b1a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos 90 (1216700)", "b2k": "5251741308430000", "b2a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos 90 (1216700)", "s1k": "5251741308140000", "s1a": "Soket, 5/16\", H1200ad1, (1227979)", "s2k": "5251741308140000", "s2a": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "250°", "sp": "5251721072400000", "sp_ac": "Hortum Kilifi, Polietilen, 5/16\", 13x16 (10011081000130)", "sp_kesim": "190", "not_": ""}, {"no": 3, "kod": "5251721312930000", "raf": "R9", "ac": "HORTUM, 5/16\" 1SC DUZ+90 10S TB:1500 (REF:172107158)", "hortum": "5251721072640000", "hortum_ac": "Hortum, 1sc 5/16\", Dunlop 121t", "kesim": "143.9", "tam_boy": "150", "b1k": "5251741308350000", "b1a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos (1201832)", "b2k": "5251741308430000", "b2a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos 90 (1216700)", "s1k": "5251741308140000", "s1a": "Soket, 5/16\", H1200ad1, (1227979)", "s2k": "5251741308140000", "s2a": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "", "sp": "", "sp_ac": "", "sp_kesim": "", "not_": ""}, {"no": 4, "kod": "5251721312940000", "raf": "R18", "ac": "HORTUM, 5/16\" 1SC 90°+DUZ 10S TB:1250 (REF:542704000)", "hortum": "5251721072640000", "hortum_ac": "Hortum, 1sc 5/16\", Dunlop 121t", "kesim": "118.9", "tam_boy": "125", "b1k": "5251741308430000", "b1a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos 90 (1216700)", "b2k": "5251741308350000", "b2a": "Başlık, 5/16\", 10s, M18x1,5, Din 3865-Dkos (1201832)", "s1k": "5251741308140000", "s1a": "Soket, 5/16\", H1200ad1, (1227979)", "s2k": "5251741308140000", "s2a": "Soket, 5/16\", H1200ad1, (1227979)", "ory": "", "sp": "", "sp_ac": "", "sp_kesim": "", "not_": ""}, {"no": 5, "kod": "5251721314810000", "raf": "", "ac": "HORTUM, 3/8 1SC DUZ+90 12L TB:2100", "hortum": "5251721072650000", "hortum_ac": "Hortum, 3/8\", 1sc, (Dunlop 121t Superslimline Plus-1SC )", "kesim": "204", "tam_boy": "210", "b1k": "5251741308330000", "b1a": "Başlık, 3/8\", 12l, M18x1,5, Din 3865-Dkol (1200667)", "b2k": "5251741308440000", "b2a": "Başlık, 3/8\", 12l, M18x1.5, Din 3865-Dkol 90 (1200676)", "s1k": "5251741308150000", "s1a": "Soket, 3/8\", H1200ad1, (1227980)", "s2k": "5251741308150000", "s2a": "Soket, 3/8\", H1200ad1, (1227980)", "ory": "", "sp": "", "sp_ac": "", "sp_kesim": "", "not_": ""}, {"no": 6, "kod": "5251721312700000", "raf": "R100", "ac": "HORTUM OZEL, 3/4\" 2SC 5 BUKUM+DUZ 25S TB:1610 TB:SPIRAL (REF:174106209)", "hortum": "5251721072550000", "hortum_ac": "Hortum, 3/4\", 2sc, (Dunlop 241t Superslimline Hi-Tuff)", "kesim": "133.4", "tam_boy": "161", "b1k": "5251741301650000", "b1a": "Özel Başlık, 174106209 Bhl", "b2k": "5251741308400000", "b2a": "Başlık, 3/4\", 25s, M36x2, Din 3865-Dkos (1216696)", "s1k": "5251741308110000", "s1a": "Soket, 3/4\", H1200ad1, (1227985)", "s2k": "5251741308110000", "s2a": "Soket, 3/4\", H1200ad1, (1227985)", "ory": "", "sp": "5251721072360000", "sp_ac": "Hortum Kilifi, Polietilen, 3/4\", 27x32 (10011081000270)", "sp_kesim": "160", "not_": ""}, {"no": 7, "kod": "5251721314530000", "raf": "R107", "ac": "HORTUM OZEL, 3/4\" 1SC 90°, 2 BUKUM 20S TB:1300 ORY:270  (REF:174106412)", "hortum": "5251721072620000", "hortum_ac": "HOSE, 3/4\",1SC, (DUNLOP 121T SLIMELINE PLUS - 1SC)", "kesim": "118.1", "tam_boy": "130", "b1k": "5251741308490000", "b1a": "Başlık, 3/4\", 20s, M30x2, Din 3865-Dkos 90 (1200766)", "b2k": "5251741301740000", "b2a": "Özel Başlık,174106207 - Ozel Başlık Bhl", "s1k": "5251741308110000", "s1a": "Soket, 3/4\", H1200ad1, (1227985)", "s2k": "5251741308110000", "s2a": "Soket, 3/4\", H1200ad1, (1227985)", "ory": "270°", "sp": "", "sp_ac": "", "sp_kesim": "", "not_": ""}, {"no": 8, "kod": "5251721312470000", "raf": "R238", "ac": "HORTUM, 3/4 2SC 45+90 TB:1120 ORY:90 (REF:174106210)", "hortum": "5251721072550000", "hortum_ac": "Hortum, 3/4\", 2sc, (Dunlop 241t Superslimline Hi-Tuff)", "kesim": "99", "tam_boy": "112", "b1k": "5251741308600000", "b1a": "Başlık, 3/4\", 25s, M36x2, Din 3865-Dkos  45 (1200765)", "b2k": "5251741308500000", "b2a": "Başlık, 3/4\", 25s, M36x2, Din 3865-Dkos 90 (1200768)", "s1k": "5251741309460000", "s1a": "FERRULE, 3/4, H1200AD2-12, (1227996)", "s2k": "5251741309460000", "s2a": "FERRULE, 3/4, H1200AD2-12, (1227996)", "ory": "90°", "sp": "", "sp_ac": "", "sp_kesim": "", "not_": ""}, {"no": 9, "kod": "5251721312460000", "raf": "R239", "ac": "HORTUM OZEL, 3/4 2SC 2 BUKUMLU 22x3,DUZ, TB:910 TB:SPIRAL (REF:174106208)", "hortum": "5251721072550000", "hortum_ac": "Hortum, 3/4\", 2sc, (Dunlop 241t Superslimline Hi-Tuff)", "kesim": "79", "tam_boy": "91", "b1k": "5251741060130000", "b1a": "Başlık, 2 Bukumlu 22x3 Bhl", "b2k": "5251741308400000", "b2a": "Başlık, 3/4\", 25s, M36x2, Din 3865-Dkos (1216696)", "s1k": "5251741308110000", "s1a": "Soket, 3/4\", H1200ad1, (1227985)", "s2k": "5251741308110000", "s2a": "Soket, 3/4\", H1200ad1, (1227985)", "ory": "", "sp": "5251721072360000", "sp_ac": "Hortum Kilifi, Polietilen, 3/4\", 27x32 (10011081000270)", "sp_kesim": "84", "not_": ""}, {"no": 10, "kod": "5251721313810000", "raf": "R234", "ac": "HORTUM, 1 1SC 90+90 28L TB:780 ORY: 0° (REF:174106409)", "hortum": "5251721072630000", "hortum_ac": "HOSE, 1\",1SC, (DUNLOP 121T SLIMELINE PLUS - 1SC)", "kesim": "63", "tam_boy": "78", "b1k": "5251741308510000", "b1a": "Başlık, 1\", 28l, M36x2, Din 3865-Dkol 90 (1201391)", "b2k": "5251741308510000", "b2a": "Başlık, 1\", 28l, M36x2, Din 3865-Dkol 90 (1201391)", "s1k": "5251741308100000", "s1a": "FERRULE, 1\", H1200AD1, (1227986)", "s2k": "5251741308100000", "s2a": "FERRULE, 1\", H1200AD1, (1227986)", "ory": "0°", "sp": "", "sp_ac": "", "sp_kesim": "", "not_": ""}];
+
+var opAd = '', opUretimNo = '', bulunanKalem = null;
+
+var raflar = DATA.filter(function(d){ return d.raf; }).map(function(d){ return d.raf; });
+var QUICK = raflar.slice(0,8);
+var chipsEl = document.getElementById('chips');
+QUICK.forEach(function(r){
+  var c = document.createElement('div');
+  c.className = 'chip'; c.textContent = r;
+  c.onclick = function(){ document.getElementById('inp').value = r; doSearch(); };
+  chipsEl.appendChild(c);
+});
+
+function operatorKaydet(){
+  var ad = document.getElementById('adSoyad').value.trim();
+  var no = document.getElementById('uretimNo').value.trim();
+  if(!ad){ showToast('Ad soyad girin!','err'); return; }
+  if(!no){ showToast('Üretim no girin!','err'); return; }
+  opAd = ad; opUretimNo = no;
+  document.getElementById('opBadgeText').textContent = ad + ' — Üretim No: ' + no;
+  document.getElementById('opBadge').classList.add('show');
+  document.getElementById('opInputs').style.display = 'none';
+  document.getElementById('opTitle').textContent = 'Operatör';
+  showToast('Kaydedildi!');
+  if(bulunanKalem) renderKaydetBtn();
+}
+
+function operatorDegistir(){
+  opAd=''; opUretimNo=''; bulunanKalem=null;
+  document.getElementById('opBadge').classList.remove('show');
+  document.getElementById('opInputs').style.display = '';
+  document.getElementById('opTitle').textContent = 'Operatör bilgileri';
+  var kw = document.querySelector('.kaydet-wrap'); if(kw) kw.remove();
+}
+
+function isYok(v){
+  if(v===null||v===undefined) return true;
+  var s = String(v).trim();
+  return s===''||s==='YOK'||s==='BAŞLIK YOK'||s==='SOKET YOK'||s==='-';
+}
+
+function row(lbl, val){
+  var y = isYok(val);
+  return '<div class="crow"><span class="crow-lbl">'+lbl+'</span><span class="crow-val'+(y?' crow-yok':'')+'">'+( y?'—':val)+'</span></div>';
+}
+
+function renderKaydetBtn(){
+  var old = document.querySelector('.kaydet-wrap'); if(old) old.remove();
+  if(!opAd||!opUretimNo) return;
+  var wrap = document.createElement('div');
+  wrap.className = 'kaydet-wrap';
+  wrap.innerHTML = '<button class="btn-kaydet" id="btnKaydet" onclick="kaydet()">Üretimi Kaydet → Google Sheets</button>';
+  document.getElementById('results').after(wrap);
+}
+
+function renderCard(d){
+  bulunanKalem = d;
+  var notHtml = '';
+  if(!isYok(d.not_)){
+    notHtml = '<div class="not-box"><div class="not-lbl">Not</div><div class="not-val">'+d.not_+'</div></div>';
+  }
+  return '<div class="rcard">'+
+    '<div class="rcard-hd">'+
+      '<div class="rcard-meta">'+
+        '<span class="badge badge-no">#'+d.no+'</span>'+
+        (d.raf?'<span class="badge">'+d.raf+'</span>':'')+
+      '</div>'+
+      '<div class="rcard-title">'+d.ac+'</div>'+
+    '</div>'+
+    '<div class="rcard-body">'+
+      '<div class="clist">'+
+        row('Raf no', d.raf)+
+        row('Kalem açıklaması', d.ac)+
+        row('Hortum', d.hortum)+
+        row('Hortum açıklama', d.hortum_ac)+
+        row('Kesim boyu', d.kesim ? d.kesim+' cm' : '')+
+        row('Tam boy', d.tam_boy ? d.tam_boy+' cm' : '')+
+        row('Başlık - 1', d.b1k)+
+        row('Başlık -1 açıklama', d.b1a)+
+        row('Başlık-2', d.b2k)+
+        row('Başlık -2 açıklama', d.b2a)+
+        row('Soket-1', d.s1k)+
+        row('Soket-1 açıklama', d.s1a)+
+        row('Soket-2', d.s2k)+
+        row('Soket-2 açıklama', d.s2a)+
+        row('ORY', d.ory)+
+        row('Spiral', d.sp)+
+        row('Spiral açıklama', d.sp_ac)+
+        row('Spiral kesim', d.sp_kesim ? d.sp_kesim+' cm' : '')+
+      '</div>'+
+      notHtml+
+    '</div>'+
+  '</div>';
+}
+
+function doSearch(q){
+  if(!q) q = document.getElementById('inp').value.trim().toUpperCase();
+  else q = String(q).toUpperCase();
+  var out = document.getElementById('results');
+  if(!q){ showEmpty(); return; }
+  var found = DATA.filter(function(d){
+    return d.kod.indexOf(q)!==-1 || (d.raf && d.raf.toUpperCase()===q);
+  });
+  if(!found.length){
+    bulunanKalem=null;
+    var kw=document.querySelector('.kaydet-wrap'); if(kw) kw.remove();
+    out.innerHTML='<div class="notfound"><p>Bulunamadı: <strong>'+q+'</strong></p><p class="notfound-hint">Kodu kontrol edip tekrar deneyin</p></div>';
+  } else {
+    out.innerHTML = found.map(renderCard).join('');
+    out.scrollTop = 0;
+    renderKaydetBtn();
+  }
+}
+
+function showEmpty(){
+  bulunanKalem=null;
+  var kw=document.querySelector('.kaydet-wrap'); if(kw) kw.remove();
+  document.getElementById('results').innerHTML='<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="empty-t">Operatör bilgilerini girin</div><div class="empty-s">Ad soyad ve üretim numarasını girdikten sonra kalem kodu arayabilirsiniz</div></div>';
+}
+
+function kaydet(){
+  if(!opAd||!opUretimNo){ showToast('Önce operatör bilgilerini girin!','err'); return; }
+  if(!bulunanKalem){ showToast('Önce kalem kodu arayın!','err'); return; }
+  var btn = document.getElementById('btnKaydet');
+  btn.disabled=true; btn.textContent='Kaydediliyor...';
+  var simdi = new Date();
+  var tarih = simdi.toLocaleDateString('tr-TR')+' '+simdi.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+  var payload = {
+    tarih: tarih,
+    adSoyad: opAd,
+    uretimNo: opUretimNo,
+    kalemKodu: bulunanKalem.kod,
+    rafNo: bulunanKalem.raf||'',
+    aciklama: bulunanKalem.ac,
+    kesimCm: bulunanKalem.kesim ? bulunanKalem.kesim+' cm' : ''
+  };
+  fetch(SHEET_URL,{
+    method:'POST', mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  }).then(function(){
+    showToast("Google Sheets'e kaydedildi!");
+    btn.textContent='Kaydedildi!';
+    btn.style.background='var(--surface2)';
+    btn.style.color='var(--green)';
+    setTimeout(function(){
+      btn.disabled=false;
+      btn.textContent='Üretimi Kaydet → Google Sheets';
+      btn.style.background=''; btn.style.color='';
+    },3000);
+  }).catch(function(){
+    showToast('Bağlantı hatası!','err');
+    btn.disabled=false; btn.textContent='Üretimi Kaydet → Google Sheets';
+  });
+}
+
+function showToast(msg,tip){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast'+(tip?' '+tip:'');
+  setTimeout(function(){ t.classList.add('show'); },10);
+  setTimeout(function(){ t.classList.remove('show'); },2800);
+}
+
+document.getElementById('inp').addEventListener('keydown',function(e){
+  if(e.key==='Enter') doSearch();
+});
+</script>
+</body>
+</html>
