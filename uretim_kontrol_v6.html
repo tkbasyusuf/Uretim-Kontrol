@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Üretim Kontrol">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f3f6e">
+<title>Üretim Kontrol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a1628;--surface:#0f2040;--surface2:#162a50;
+  --accent:#1a7fd4;--accent2:#0f5fa0;
+  --green:#1db87a;--red:#e55;
+  --text:#e8f0f8;--text2:#8aaac8;--text3:#4a6a8a;
+  --border:#1e3558;--border2:#2a4870;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+  --r:12px;--rs:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);font-family:var(--sans);color:var(--text);overscroll-behavior:none;}
+body{display:flex;flex-direction:column;max-width:480px;margin:0 auto;min-height:100dvh;}
+
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);
+  padding:max(env(safe-area-inset-top),14px) 16px 14px;flex-shrink:0;}
+.hdr-inner{display:flex;align-items:center;gap:12px;}
+.hdr-icon{width:38px;height:38px;border-radius:10px;background:var(--accent2);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.hdr-icon svg{width:20px;height:20px;}
+.hdr-t{font-size:17px;font-weight:600;letter-spacing:-.01em;}
+.hdr-s{font-size:11px;color:var(--text3);margin-top:1px;font-family:var(--mono);}
+
+.loading-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;
+  font-size:12px;color:var(--text3);display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.loading-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);
+  animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.loading-bar.ok{color:var(--green);}
+.loading-bar.err{color:var(--red);}
+.loading-bar.ok .loading-dot{background:var(--green);animation:none;}
+.loading-bar.err .loading-dot{background:var(--red);animation:none;}
+
+.opform{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;flex-shrink:0;}
+.opform-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;font-family:var(--mono);}
+.opform-row{display:flex;gap:8px;margin-bottom:8px;}
+.opform-row:last-child{margin-bottom:0;}
+.inp{flex:1;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--rs);
+  color:var(--text);font-size:15px;font-family:var(--sans);padding:10px 13px;outline:none;transition:.15s;}
+.inp::placeholder{color:var(--text3);font-size:14px;}
+.inp:focus{border-color:var(--accent);}
+.inp-mono{font-family:var(--mono);font-size:14px;}
+.op-set{background:var(--green);color:#fff;border:none;border-radius:var(--rs);
+  padding:0 16px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.op-set:active{opacity:.82;}
+.op-badge{display:none;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rs);
+  padding:8px 14px;font-size:13px;color:var(--text2);align-items:center;justify-content:space-between;}
+.op-badge.show{display:flex;}
+.op-edit{background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;font-family:var(--sans);}
+
+.search-wrap{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;}
+.search-row{display:flex;gap:8px;}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:var(--rs);
+  padding:0 20px;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.btn:active{opacity:.82;}
+
+.quick-wrap{padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.ql{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;font-family:var(--mono);}
+.chips{display:flex;gap:7px;flex-wrap:wrap;}
+.chip{background:var(--bg);border:1px solid var(--border2);border-radius:20px;
+  padding:5px 13px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;font-family:var(--mono);}
+.chip:active{background:var(--surface2);color:var(--text);border-color:var(--accent);}
+
+.results{flex:1;overflow-y:auto;padding:14px 14px 40px;-webkit-overflow-scrolling:touch;}
+
+.empty{display:flex;flex-direction:column;align-items:center;padding:50px 20px;color:var(--text3);text-align:center;gap:12px;}
+.empty-icon{width:56px;height:56px;border-radius:16px;background:var(--surface);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;}
+.empty-icon svg{width:24px;height:24px;}
+.empty-t{font-size:15px;color:var(--text2);font-weight:500;}
+.empty-s{font-size:13px;line-height:1.5;}
+
+.rcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px;animation:fu .2s ease;}
+@keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.rcard-hd{background:var(--accent2);padding:13px 16px;}
+.rcard-meta{display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap;}
+.badge{font-family:var(--mono);font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;
+  background:rgba(255,255,255,.15);color:rgba(255,255,255,.9);}
+.badge-no{background:rgba(0,0,0,.25);}
+.rcard-title{font-size:14px;font-weight:600;color:#fff;line-height:1.4;}
+.rcard-body{padding:0;}
+.clist{display:flex;flex-direction:column;}
+.crow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+  padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface2);}
+.crow:nth-child(odd){background:var(--surface);}
+.crow:last-child{border-bottom:none;}
+.crow-lbl{font-size:12px;color:var(--text3);flex-shrink:0;padding-top:1px;width:130px;}
+.crow-val{font-size:13px;font-family:var(--mono);color:var(--text);word-break:break-all;line-height:1.4;text-align:right;}
+.crow-yok{color:var(--text3);font-style:italic;font-family:var(--sans);font-size:12px;}
+
+.not-box{background:#1a2a10;border:1px solid rgba(100,200,50,.3);border-radius:var(--rs);
+  padding:10px 14px;margin:8px 16px 12px;}
+.not-lbl{font-size:10px;color:#8bc34a;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;font-family:var(--mono);}
+.not-val{font-size:13px;color:#c5e8a0;line-height:1.4;}
+
+.kaydet-wrap{padding:12px 16px;border-top:1px solid var(--border);background:var(--surface);}
+.btn-kaydet{width:100%;padding:13px;background:var(--green);color:#fff;border:none;
+  border-radius:var(--rs);font-size:15px;font-weight:600;cursor:pointer;}
+.btn-kaydet:active{opacity:.82;}
+.btn-kaydet:disabled{background:var(--surface2);color:var(--text3);cursor:not-allowed;}
+
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--green);color:#fff;padding:11px 22px;border-radius:30px;
+  font-size:14px;font-weight:500;opacity:0;transition:.3s;pointer-events:none;z-index:999;white-space:nowrap;}
+.toast.err{background:var(--red);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.notfound{text-align:center;padding:40px 20px;color:var(--text3);}
+.notfound strong{color:var(--text2);font-family:var(--mono);}
+.notfound-hint{font-size:12px;margin-top:6px;}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#7dc8f5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+        <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+      </svg>
+    </div>
+    <div><div class="hdr-t">Üretim Kontrol</div><div class="hdr-s">Kalem sorgulama sistemi</div></div>
+  </div>
+</div>
+
+<div class="loading-bar" id="loadingBar">
+  <div class="loading-dot"></div>
+  <span id="loadingText">Veriler yükleniyor...</span>
+</div>
+
+<div class="opform" id="opform">
+  <div class="opform-title" id="opTitle">Operatör bilgileri</div>
+  <div id="opInputs">
+    <div class="opform-row">
+      <input class="inp" type="text" id="adSoyad" placeholder="Ad Soyad" autocomplete="name"/>
+    </div>
+    <div class="opform-row">
+      <input class="inp inp-mono" type="text" id="uretimNo" placeholder="Üretim No" autocomplete="off"/>
+      <button class="op-set" onclick="operatorKaydet()">Kaydet</button>
+    </div>
+  </div>
+  <div class="op-badge" id="opBadge">
+    <span id="opBadgeText"></span>
+    <button class="op-edit" onclick="operatorDegistir()">Değiştir</button>
+  </div>
+</div>
+
+<div class="search-wrap">
+  <div class="search-row">
+    <input class="inp inp-mono" type="text" id="inp" placeholder="Kalem kodu veya raf no..." inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false"/>
+    <button class="btn" onclick="doSearch()">Ara</button>
+  </div>
+</div>
+
+<div class="quick-wrap">
+  <div class="ql">Hızlı erişim</div>
+  <div class="chips" id="chips"></div>
+</div>
+
+<div class="results" id="results">
+  <div class="empty">
+    <div class="empty-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    </div>
+    <div class="empty-t">Veriler yükleniyor</div>
+    <div class="empty-s">Lütfen bekleyin...</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var SHEET_URL = 'https://script.google.com/macros/s/AKfycbwsJ9p7otDuZBBxU58TsE9W1dWOkotWQASg7ylBlzrQic8MK832MkehaglKqOU6z4qH/exec';
+var KAYIT_URL = 'https://script.google.com/macros/s/AKfycbziAvQR5qURlSpMlwJJzWvK9YM4thvHD0LV9wfQZ1Hxx-IrBj_Fq71ROaIgWHQbaZxB/exec';
+var DATA = [];
+var opAd = '', opUretimNo = '', bulunanKalem = null;
+
+function clean(v) {
+  if (v === null || v === undefined) return '';
+  var s = String(v).trim();
+  if (s === 'undefined' || s === 'null') return '';
+  return s;
+}
+
+function isYok(v) {
+  var s = clean(v);
+  return s === '' || s === 'YOK' || s === 'BAŞLIK YOK' || s === 'SOKET YOK' || s === '-' || s === '0';
+}
+
+function loadData() {
+  fetch(SHEET_URL)
+    .then(function(r){ return r.json(); })
+    .then(function(rows) {
+      DATA = rows.map(function(r, i) {
+        return {
+          no: i + 1,
+          kod: clean(r['KALEM KODU']),
+          raf: clean(r['RAF NO']),
+          ac: clean(r['KALEM AÇIKLAMASI']),
+          hortum: clean(r['HORTUM']),
+          hortum_ac: clean(r['HORTUM AÇIKLAMA']),
+          kesim: clean(r['KESİM BOYU']),
+          tam_boy: clean(r['TAM BOY']),
+          b1k: clean(r['BAŞLIK - 1']),
+          b1a: clean(r['BAŞLIK -1 AÇIKLAMA']),
+          b2k: clean(r['BAŞLIK-2']),
+          b2a: clean(r['BAŞLIK -2 AÇIKLAMA']),
+          s1k: clean(r['SOKET-1']),
+          s1a: clean(r['SOKET-1 AÇIKLAMA']),
+          s2k: clean(r['SOKET-2']),
+          s2a: clean(r['SOKET-2 AÇIKLAMA']),
+          ory: clean(r['ORY']),
+          sp: clean(r['SPRİAL']),
+          sp_ac: clean(r['SPRİAL  AÇIKLAMA']),
+          sp_kesim: clean(r['SPRİAL KESİM']),
+          not_: clean(r['NOT'])
+        };
+      }).filter(function(d){ return d.kod; });
+
+      var lb = document.getElementById('loadingBar');
+      lb.className = 'loading-bar ok';
+      document.getElementById('loadingText').textContent = DATA.length + ' kalem yüklendi';
+      setTimeout(function(){ lb.style.display='none'; }, 2000);
+
+      buildChips();
+      showEmpty2();
+    })
+    .catch(function(err) {
+      var lb = document.getElementById('loadingBar');
+      lb.className = 'loading-bar err';
+      document.getElementById('loadingText').textContent = 'Veri yüklenemedi! İnternet bağlantısını kontrol edin.';
+    });
+}
+
+function buildChips() {
+  var chipsEl = document.getElementById('chips');
+  chipsEl.innerHTML = '';
+  var raflar = DATA.filter(function(d){ return d.raf && d.raf !== '-'; }).slice(0,8);
+  raflar.forEach(function(d){
+    var c = document.createElement('div');
+    c.className = 'chip'; c.textContent = d.raf;
+    c.onclick = function(){ document.getElementById('inp').value = d.raf; doSearch(); };
+    chipsEl.appendChild(c);
+  });
+}
+
+function operatorKaydet() {
+  var ad = document.getElementById('adSoyad').value.trim();
+  var no = document.getElementById('uretimNo').value.trim();
+  if (!ad) { showToast('Ad soyad girin!', 'err'); return; }
+  if (!no) { showToast('Üretim no girin!', 'err'); return; }
+  opAd = ad; opUretimNo = no;
+  document.getElementById('opBadgeText').textContent = ad + ' — Üretim No: ' + no;
+  document.getElementById('opBadge').classList.add('show');
+  document.getElementById('opInputs').style.display = 'none';
+  document.getElementById('opTitle').textContent = 'Operatör';
+  showToast('Kaydedildi!');
+  if (bulunanKalem) renderKaydetBtn();
+}
+
+function operatorDegistir() {
+  opAd = ''; opUretimNo = ''; bulunanKalem = null;
+  document.getElementById('opBadge').classList.remove('show');
+  document.getElementById('opInputs').style.display = '';
+  document.getElementById('opTitle').textContent = 'Operatör bilgileri';
+  var kw = document.querySelector('.kaydet-wrap'); if (kw) kw.remove();
+}
+
+function row(lbl, val) {
+  var y = isYok(val);
+  return '<div class="crow"><span class="crow-lbl">' + lbl + '</span><span class="crow-val' + (y ? ' crow-yok' : '') + '">' + (y ? '—' : val) + '</span></div>';
+}
+
+function renderKaydetBtn() {
+  var old = document.querySelector('.kaydet-wrap'); if (old) old.remove();
+  if (!opAd || !opUretimNo) return;
+  var wrap = document.createElement('div');
+  wrap.className = 'kaydet-wrap';
+  wrap.innerHTML = '<button class="btn-kaydet" id="btnKaydet" onclick="kaydet()">Üretimi Kaydet → Google Sheets</button>';
+  document.getElementById('results').after(wrap);
+}
+
+function renderCard(d) {
+  bulunanKalem = d;
+  var notHtml = '';
+  if (!isYok(d.not_)) {
+    notHtml = '<div class="not-box"><div class="not-lbl">Not</div><div class="not-val">' + d.not_ + '</div></div>';
+  }
+  return '<div class="rcard">' +
+    '<div class="rcard-hd">' +
+      '<div class="rcard-meta">' +
+        '<span class="badge badge-no">#' + d.no + '</span>' +
+        (d.raf && d.raf !== '-' ? '<span class="badge">' + d.raf + '</span>' : '') +
+      '</div>' +
+      '<div class="rcard-title">' + d.ac + '</div>' +
+    '</div>' +
+    '<div class="rcard-body">' +
+      '<div class="clist">' +
+        row('Raf no', d.raf) +
+        row('Kalem açıklaması', d.ac) +
+        row('Hortum', d.hortum) +
+        row('Hortum açıklama', d.hortum_ac) +
+        row('Kesim boyu', d.kesim ? d.kesim + ' cm' : '') +
+        row('Tam boy', d.tam_boy ? d.tam_boy + ' cm' : '') +
+        row('Başlık - 1', d.b1k) +
+        row('Başlık -1 açıklama', d.b1a) +
+        row('Başlık-2', d.b2k) +
+        row('Başlık -2 açıklama', d.b2a) +
+        row('Soket-1', d.s1k) +
+        row('Soket-1 açıklama', d.s1a) +
+        row('Soket-2', d.s2k) +
+        row('Soket-2 açıklama', d.s2a) +
+        row('ORY', d.ory) +
+        row('Spiral', d.sp) +
+        row('Spiral açıklama', d.sp_ac) +
+        row('Spiral kesim', d.sp_kesim ? d.sp_kesim + ' cm' : '') +
+      '</div>' +
+      notHtml +
+    '</div>' +
+  '</div>';
+}
+
+function doSearch(q) {
+  if (!q) q = document.getElementById('inp').value.trim().toUpperCase();
+  else q = String(q).toUpperCase();
+  var out = document.getElementById('results');
+  if (!q) { showEmpty2(); return; }
+  if (DATA.length === 0) { showToast('Veriler henüz yüklenmedi!', 'err'); return; }
+  var found = DATA.filter(function(d) {
+    return d.kod.indexOf(q) !== -1 || (d.raf && d.raf.toUpperCase() === q);
+  });
+  if (!found.length) {
+    bulunanKalem = null;
+    var kw = document.querySelector('.kaydet-wrap'); if (kw) kw.remove();
+    out.innerHTML = '<div class="notfound"><p>Bulunamadı: <strong>' + q + '</strong></p><p class="notfound-hint">Kodu kontrol edip tekrar deneyin</p></div>';
+  } else {
+    out.innerHTML = found.map(renderCard).join('');
+    out.scrollTop = 0;
+    renderKaydetBtn();
+  }
+}
+
+function showEmpty2() {
+  bulunanKalem = null;
+  var kw = document.querySelector('.kaydet-wrap'); if (kw) kw.remove();
+  document.getElementById('results').innerHTML = '<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="empty-t">Kalem kodu girin</div><div class="empty-s">Kalem kodunu veya raf numarasını<br>yazıp Ara'ya basın</div></div>';
+}
+
+function kaydet() {
+  if (!opAd || !opUretimNo) { showToast('Önce operatör bilgilerini girin!', 'err'); return; }
+  if (!bulunanKalem) { showToast('Önce kalem kodu arayın!', 'err'); return; }
+  var btn = document.getElementById('btnKaydet');
+  btn.disabled = true; btn.textContent = 'Kaydediliyor...';
+  var simdi = new Date();
+  var tarih = simdi.toLocaleDateString('tr-TR') + ' ' + simdi.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'});
+  var payload = {
+    tarih: tarih,
+    adSoyad: opAd,
+    uretimNo: opUretimNo,
+    kalemKodu: bulunanKalem.kod,
+    rafNo: bulunanKalem.raf || '',
+    aciklama: bulunanKalem.ac,
+    kesimCm: bulunanKalem.kesim ? bulunanKalem.kesim + ' cm' : ''
+  };
+  fetch(KAYIT_URL, {
+    method: 'POST', mode: 'no-cors',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  }).then(function() {
+    showToast("Google Sheets'e kaydedildi!");
+    btn.textContent = 'Kaydedildi!';
+    btn.style.background = 'var(--surface2)';
+    btn.style.color = 'var(--green)';
+    setTimeout(function() {
+      btn.disabled = false;
+      btn.textContent = 'Üretimi Kaydet → Google Sheets';
+      btn.style.background = ''; btn.style.color = '';
+    }, 3000);
+  }).catch(function() {
+    showToast('Bağlantı hatası!', 'err');
+    btn.disabled = false; btn.textContent = 'Üretimi Kaydet → Google Sheets';
+  });
+}
+
+function showToast(msg, tip) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast' + (tip ? ' ' + tip : '');
+  setTimeout(function(){ t.classList.add('show'); }, 10);
+  setTimeout(function(){ t.classList.remove('show'); }, 2800);
+}
+
+document.getElementById('inp').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doSearch();
+});
+
+loadData();
+</script>
+</body>
+</html>
