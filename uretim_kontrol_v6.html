@@ -203,49 +203,50 @@ function isYok(v) {
   return s === '' || s === 'YOK' || s === 'BAŞLIK YOK' || s === 'SOKET YOK' || s === '-' || s === '0';
 }
 
+function handleData(rows) {
+  DATA = rows.map(function(r, i) {
+    return {
+      no: i + 1,
+      kod: clean(r['KALEM KODU']),
+      raf: clean(r['RAF NO']),
+      ac: clean(r['KALEM AÇIKLAMASI']),
+      hortum: clean(r['HORTUM']),
+      hortum_ac: clean(r['HORTUM AÇIKLAMA']),
+      kesim: clean(r['KESİM BOYU']),
+      tam_boy: clean(r['TAM BOY']),
+      b1k: clean(r['BAŞLIK - 1']),
+      b1a: clean(r['BAŞLIK -1 AÇIKLAMA']),
+      b2k: clean(r['BAŞLIK-2']),
+      b2a: clean(r['BAŞLIK -2 AÇIKLAMA']),
+      s1k: clean(r['SOKET-1']),
+      s1a: clean(r['SOKET-1 AÇIKLAMA']),
+      s2k: clean(r['SOKET-2']),
+      s2a: clean(r['SOKET-2 AÇIKLAMA']),
+      ory: clean(r['ORY']),
+      sp: clean(r['SPRİAL']),
+      sp_ac: clean(r['SPRİAL  AÇIKLAMA']),
+      sp_kesim: clean(r['SPRİAL KESİM']),
+      not_: clean(r['NOT'])
+    };
+  }).filter(function(d){ return d.kod; });
+
+  var lb = document.getElementById('loadingBar');
+  lb.className = 'loading-bar ok';
+  document.getElementById('loadingText').textContent = DATA.length + ' kalem yüklendi';
+  setTimeout(function(){ lb.style.display='none'; }, 2000);
+  buildChips();
+  showEmpty2();
+}
+
 function loadData() {
-  fetch(SHEET_URL)
-    .then(function(r){ return r.json(); })
-    .then(function(rows) {
-      DATA = rows.map(function(r, i) {
-        return {
-          no: i + 1,
-          kod: clean(r['KALEM KODU']),
-          raf: clean(r['RAF NO']),
-          ac: clean(r['KALEM AÇIKLAMASI']),
-          hortum: clean(r['HORTUM']),
-          hortum_ac: clean(r['HORTUM AÇIKLAMA']),
-          kesim: clean(r['KESİM BOYU']),
-          tam_boy: clean(r['TAM BOY']),
-          b1k: clean(r['BAŞLIK - 1']),
-          b1a: clean(r['BAŞLIK -1 AÇIKLAMA']),
-          b2k: clean(r['BAŞLIK-2']),
-          b2a: clean(r['BAŞLIK -2 AÇIKLAMA']),
-          s1k: clean(r['SOKET-1']),
-          s1a: clean(r['SOKET-1 AÇIKLAMA']),
-          s2k: clean(r['SOKET-2']),
-          s2a: clean(r['SOKET-2 AÇIKLAMA']),
-          ory: clean(r['ORY']),
-          sp: clean(r['SPRİAL']),
-          sp_ac: clean(r['SPRİAL  AÇIKLAMA']),
-          sp_kesim: clean(r['SPRİAL KESİM']),
-          not_: clean(r['NOT'])
-        };
-      }).filter(function(d){ return d.kod; });
-
-      var lb = document.getElementById('loadingBar');
-      lb.className = 'loading-bar ok';
-      document.getElementById('loadingText').textContent = DATA.length + ' kalem yüklendi';
-      setTimeout(function(){ lb.style.display='none'; }, 2000);
-
-      buildChips();
-      showEmpty2();
-    })
-    .catch(function(err) {
-      var lb = document.getElementById('loadingBar');
-      lb.className = 'loading-bar err';
-      document.getElementById('loadingText').textContent = 'Veri yüklenemedi! İnternet bağlantısını kontrol edin.';
-    });
+  var script = document.createElement('script');
+  script.src = SHEET_URL + '?callback=handleData';
+  script.onerror = function() {
+    var lb = document.getElementById('loadingBar');
+    lb.className = 'loading-bar err';
+    document.getElementById('loadingText').textContent = 'Veri yuklenemedi! Internet baglantisini kontrol edin.';
+  };
+  document.head.appendChild(script);
 }
 
 function buildChips() {
@@ -359,7 +360,7 @@ function doSearch(q) {
 function showEmpty2() {
   bulunanKalem = null;
   var kw = document.querySelector('.kaydet-wrap'); if (kw) kw.remove();
-  document.getElementById('results').innerHTML = '<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="empty-t">Kalem kodu girin</div><div class="empty-s">Kalem kodunu veya raf numarasını<br>yazıp Ara'ya basın</div></div>';
+  document.getElementById('results').innerHTML = '<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="empty-t">Kalem kodu girin</div><div class="empty-s">Kalem kodunu veya raf numarasını<br>yazıp Ara tuşuna basın</div></div>';
 }
 
 function kaydet() {
