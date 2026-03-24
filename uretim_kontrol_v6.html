@@ -224,7 +224,7 @@ function handleData(rows) {
       s2a: clean(r['SOKET-2 AÇIKLAMA']),
       ory: clean(r['ORY']),
       sp: clean(r['SPRİAL']),
-      sp_ac: clean(r['SPRİAL  AÇIKLAMA']),
+      sp_ac: clean(r['SPRİAL AÇIKLAMA'] || r['SPRİAL  AÇIKLAMA'] || r['SPRIAL ACIKLAMA'] || r['SPRIAL  ACIKLAMA']),
       sp_kesim: clean(r['SPRİAL KESİM']),
       not_: clean(r['NOT'])
     };
